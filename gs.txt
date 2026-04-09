@@ -6,7 +6,7 @@ function setupDatabase() {
   menuSheet.appendRow(["ID", "Item Name", "Category", "Price", "Status"]);
   
   const orderSheet = ss.insertSheet("Orders");
-  orderSheet.appendRow(["Order ID", "Date", "Table", "Items (JSON)", "Total", "Payment Mode", "Status"]);
+  orderSheet.appendRow(["Order ID", "Date", "Table", "Items (JSON)", "Total", "Payment Mode", "Status", "Customer Name", "Customer Phone"]);
   
   const tableSheet = ss.insertSheet("Tables");
   tableSheet.appendRow(["Table ID", "Table Name", "Capacity", "Status"]);
@@ -89,15 +89,35 @@ function getOrders() {
   const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Orders');
   const data = sheet.getDataRange().getValues();
   data.shift();
-  // Columns: 0:ID, 1:Date, 2:Table, 3:Items, 4:Total, 5:Mode, 6:Status
-  return data.map(row => ({ id: row[0], date: row[1], table: row[2], items: JSON.parse(row[3]), total: row[4], mode: row[5], status: row[6] })).reverse();
+  // Columns: 0:ID, 1:Date, 2:Table, 3:Items, 4:Total, 5:Mode, 6:Status, 7:Customer Name, 8:Customer Phone
+  return data.map(row => ({
+    id: row[0],
+    date: row[1],
+    table: row[2],
+    items: JSON.parse(row[3]),
+    total: row[4],
+    mode: row[5] || 'Pending',
+    status: row[6],
+    customerName: row[7] || 'Walk-in',
+    customerPhone: row[8] || '-'
+  })).reverse();
 }
 
 function saveOrder(order) {
   const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Orders');
   const newId = 'ORD' + Math.floor(Math.random() * 10000);
   const date = new Date().toLocaleString();
-  sheet.appendRow([newId, date, order.table, JSON.stringify(order.items), order.total, order.mode, 'Booked']);
+  sheet.appendRow([
+    newId,
+    date,
+    order.table,
+    JSON.stringify(order.items),
+    order.total,
+    'Pending',
+    'Booked',
+    order.customerName || 'Walk-in',
+    order.customerPhone || '-'
+  ]);
   return { id: newId, date: date, ...order };
 }
 
@@ -107,6 +127,19 @@ function updateOrderStatus(orderId, newStatus) {
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] == orderId) {
       sheet.getRange(i + 1, 7).setValue(newStatus); // Column 7 is Status
+      break;
+    }
+  }
+  return true;
+}
+
+function completeOrderAndRecordPayment(orderId, paymentMode) {
+  const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Orders');
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] == orderId) {
+      sheet.getRange(i + 1, 6).setValue(paymentMode); // Column 6 is Payment Mode
+      sheet.getRange(i + 1, 7).setValue('Completed'); // Column 7 is Status
       break;
     }
   }

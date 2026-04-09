@@ -579,17 +579,26 @@
     }
 
     function saveExpense() {
+      const amount = Number(document.getElementById('expAmount').value);
       const exp = {
         category: document.getElementById('expCategory').value,
-        amount: document.getElementById('expAmount').value,
-        desc: document.getElementById('expDesc').value
+        amount: amount,
+        desc: document.getElementById('expDesc').value.trim()
       };
-      if(!exp.amount) return alert('Amount required');
-      google.script.run.withSuccessHandler(() => {
-        document.getElementById('expAmount').value = '';
-        document.getElementById('expDesc').value = '';
-        loadExpenses();
-      }).saveExpense(exp);
+      if(!amount || amount <= 0) {
+        return showToast('Please enter a valid amount greater than 0.', 'info');
+      }
+      google.script.run
+        .withSuccessHandler(() => {
+          document.getElementById('expAmount').value = '';
+          document.getElementById('expDesc').value = '';
+          showToast('Expense saved successfully.', 'success');
+          loadExpenses();
+        })
+        .withFailureHandler((err) => {
+          showToast(`Expense save failed: ${err.message || err}`, 'info');
+        })
+        .saveExpense(exp);
     }
   </script>
 </body>

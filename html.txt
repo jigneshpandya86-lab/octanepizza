@@ -39,7 +39,7 @@
     th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
     th { background-color: #f3f3f3; }
     .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; }
-    .status-Active, .status-Delivered, .status-Confirmed { background: #067d62; }
+    .status-Active, .status-Delivered, .status-Confirmed, .status-Completed { background: #067d62; }
     .status-Inactive, .status-Cancelled { background: #cc0c39; }
     .status-Booked { background: var(--amz-orange); color: black; }
 
@@ -54,11 +54,13 @@
       .receipt-total { border-top: 1px dashed black; margin-top: 10px; padding-top: 10px; font-weight: bold; text-align: right; }
     }
     
-    .pos-grid { gap: 20px; }
-    .page.active.pos-grid { display: grid; grid-template-columns: 2fr 1fr; }
-    @media (max-width: 768px) { .page.active.pos-grid { grid-template-columns: 1fr; } }
-    .menu-item-btn { background: white; border: 1px solid #ddd; padding: 15px; border-radius: 4px; cursor: pointer; text-align: center; }
+    .pos-grid { gap: 14px; }
+    .page.active.pos-grid { display: grid; grid-template-columns: 1fr; }
+    .menu-item-btn { background: white; border: 1px solid #ddd; padding: 10px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 13px; }
     .menu-item-btn:hover { border-color: var(--amz-orange); box-shadow: 0 0 5px rgba(255,153,0,0.5); }
+    .compact-order label { font-size: 11px !important; }
+    .compact-order input, .compact-order select { margin: 4px 0 8px; padding: 8px; font-size: 13px; }
+    .compact-order h2 { font-size: 22px; margin: 8px 0; }
 
     .mobile-bottom-nav { display: none; }
     .toast-wrap { position: fixed; right: 16px; bottom: 16px; z-index: 2500; display: grid; gap: 10px; }
@@ -90,6 +92,7 @@
       .card { padding: 14px; border-radius: 10px; }
       table { font-size: 13px; min-width: 640px; }
       th, td { padding: 10px; }
+      #posMenuList { grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)) !important; gap: 8px !important; }
       .mobile-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--amz-nav); display: grid; grid-template-columns: repeat(5, 1fr); z-index: 1200; border-top: 1px solid #2f3c4c; }
       .mobile-bottom-nav .nav-btn { border-radius: 0; font-size: 11px; padding: 10px 4px; border: none; white-space: normal; line-height: 1.2; }
       .toast-wrap { left: 12px; right: 12px; bottom: 72px; }
@@ -115,13 +118,12 @@
   <div class="container">
     
     <div id="pos" class="page active pos-grid">
-      <div class="card">
-        <h3>Menu</h3>
-        <div id="posMenuList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px;">
-          </div>
-      </div>
-      <div class="card">
+      <div class="card compact-order">
         <h3>Current Order</h3>
+        <label style="font-weight: bold;">Client Name:</label>
+        <input id="clientName" placeholder="Walk-in / Customer name">
+        <label style="font-weight: bold;">Client Number:</label>
+        <input id="clientPhone" placeholder="10-digit mobile number" inputmode="numeric">
         <ul id="cartItems" style="list-style: none; padding: 0;"></ul>
         <h2 style="text-align: right;">Total: ₹<span id="cartTotal">0</span></h2>
         
@@ -130,14 +132,12 @@
           <option value="Takeaway">Takeaway / No Table</option>
         </select>
         
-        <label style="font-size: 12px; font-weight: bold;">Payment Mode:</label>
-        <select id="paymentMode">
-          <option value="Cash">Cash</option>
-          <option value="UPI">UPI</option>
-          <option value="Card">Card</option>
-        </select>
-        
+        <p style="font-size:12px; margin-top:6px; color:#4f5f73;">Payment is recorded only after order is marked complete.</p>
         <button class="btn-primary" onclick="processOrder()">Book Order</button>
+      </div>
+      <div class="card">
+        <h3>Menu</h3>
+        <div id="posMenuList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px;"></div>
       </div>
     </div>
 
@@ -145,7 +145,7 @@
       <h3>Order Management</h3>
       <div style="overflow-x: auto;">
         <table>
-          <thead><tr><th>ID</th><th>Date</th><th>Table</th><th>Total</th><th>Mode</th><th>Status</th><th>Actions</th></tr></thead>
+          <thead><tr><th>ID</th><th>Date</th><th>Client</th><th>Phone</th><th>Table</th><th>Total</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody id="ordersTableBody"></tbody>
         </table>
       </div>
@@ -228,6 +228,22 @@
       </div>
     </div>
   </div>
+  <div id="paymentModal" class="modal-overlay">
+    <div class="modal">
+      <h4>Record Payment</h4>
+      <p id="paymentText"></p>
+      <label style="font-size: 12px; font-weight: bold;">Payment Mode:</label>
+      <select id="completePaymentMode">
+        <option value="Cash">Cash</option>
+        <option value="UPI">UPI</option>
+        <option value="Card">Card</option>
+      </select>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="closePaymentModal()">Cancel</button>
+        <button class="btn-primary" style="width:auto;" onclick="saveCompletedPayment()">Save Payment & Complete</button>
+      </div>
+    </div>
+  </div>
   <div id="toastWrap" class="toast-wrap"></div>
 
   <div id="printSection">
@@ -238,7 +254,8 @@
     <p style="font-size: 14px;">
       Order: <span id="printId"></span><br>
       Date: <span id="printDate"></span><br>
-      Table: <span id="printTable" style="font-weight: bold;"></span>
+      Table: <span id="printTable" style="font-weight: bold;"></span><br>
+      Client: <span id="printClient"></span> <span id="printPhone"></span>
     </p>
     <div id="printItems" style="border-top:1px dashed black; padding-top:5px; font-size: 14px;"></div>
     <div class="receipt-total">
@@ -251,6 +268,7 @@
     let globalMenu = [];
     let cart = [];
     let pendingOrder = null;
+    let pendingPaymentOrder = null;
 
     // Navigation
     function nav(pageId, btnEl) {
@@ -335,10 +353,15 @@
         items: cart,
         table: document.getElementById('posTableSelect').value,
         total: document.getElementById('cartTotal').innerText,
-        mode: document.getElementById('paymentMode').value
+        mode: 'Pending',
+        customerName: document.getElementById('clientName').value || 'Walk-in',
+        customerPhone: document.getElementById('clientPhone').value || '-'
       };
+      if (pendingOrder.customerPhone !== '-' && !/^\d{10}$/.test(pendingOrder.customerPhone)) {
+        return showToast('Please enter a valid 10-digit mobile number.', 'info');
+      }
       document.getElementById('confirmText').innerText = `Table: ${pendingOrder.table}`;
-      document.getElementById('confirmText2').innerText = `Payment: ${pendingOrder.mode} • Total: ₹${pendingOrder.total}`;
+      document.getElementById('confirmText2').innerText = `${pendingOrder.customerName} (${pendingOrder.customerPhone}) • Total: ₹${pendingOrder.total}`;
       document.getElementById('confirmModal').classList.add('show');
     }
 
@@ -356,9 +379,11 @@
         printReceipt(res);
         cart = [];
         renderCart();
+        document.getElementById('clientName').value = '';
+        document.getElementById('clientPhone').value = '';
         document.querySelector('#pos .btn-primary').innerText = 'Book Order';
         document.querySelector('#pos .btn-primary').disabled = false;
-        showToast(`Order ${res.id} booked successfully. Payment received via ${res.mode}.`, 'success');
+        showToast(`Order ${res.id} booked. Set Confirmed/Completed from Orders tab.`, 'success');
         pendingOrder = null;
       }).saveOrder(pendingOrder);
     }
@@ -369,6 +394,8 @@
       document.getElementById('printTable').innerText = orderData.table;
       document.getElementById('printTotal').innerText = orderData.total;
       document.getElementById('printMode').innerText = orderData.mode;
+      document.getElementById('printClient').innerText = orderData.customerName || 'Walk-in';
+      document.getElementById('printPhone').innerText = orderData.customerPhone || '';
       
       let itemsHtml = '';
       orderData.items.forEach(i => {
@@ -474,13 +501,13 @@
         tbody.innerHTML = '';
         orders.forEach(o => {
           tbody.innerHTML += `<tr>
-            <td>${o.id}</td><td>${o.date}</td><td>${o.table || 'Takeaway'}</td><td>₹${o.total}</td><td>${o.mode}</td>
+            <td>${o.id}</td><td>${o.date}</td><td>${o.customerName || 'Walk-in'}</td><td>${o.customerPhone || '-'}</td><td>${o.table || 'Takeaway'}</td><td>₹${o.total}</td><td>${o.mode || 'Pending'}</td>
             <td><span class="status-badge status-${o.status}">${o.status}</span></td>
             <td>
               <select onchange="updateStatus('${o.id}', this.value)" style="width:auto; padding:4px;">
                 <option value="">Action...</option>
                 <option value="Confirmed">Confirm</option>
-                <option value="Delivered">Deliver</option>
+                <option value="Completed">Complete + Payment</option>
                 <option value="Cancelled">Cancel</option>
               </select>
             </td>
@@ -491,7 +518,28 @@
 
     function updateStatus(id, status) {
       if(!status) return;
+      if (status === 'Completed') {
+        pendingPaymentOrder = id;
+        document.getElementById('paymentText').innerText = `Order ${id} is delivered. Record payment to complete it.`;
+        document.getElementById('paymentModal').classList.add('show');
+        return;
+      }
       google.script.run.withSuccessHandler(loadOrders).updateOrderStatus(id, status);
+    }
+
+    function closePaymentModal() {
+      pendingPaymentOrder = null;
+      document.getElementById('paymentModal').classList.remove('show');
+    }
+
+    function saveCompletedPayment() {
+      if (!pendingPaymentOrder) return;
+      const payMode = document.getElementById('completePaymentMode').value;
+      google.script.run.withSuccessHandler(() => {
+        showToast(`Order ${pendingPaymentOrder} completed and payment (${payMode}) recorded.`, 'success');
+        closePaymentModal();
+        loadOrders();
+      }).completeOrderAndRecordPayment(pendingPaymentOrder, payMode);
     }
 
     // --- EXPENSES ---

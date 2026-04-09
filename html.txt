@@ -46,17 +46,6 @@
     .status-Inactive, .status-Cancelled { background: #cc0c39; }
     .status-Booked { background: var(--amz-orange); color: black; }
 
-    /* Print Receipt */
-    #printSection { display: none; }
-    @media print {
-      body * { visibility: hidden; }
-      #printSection, #printSection * { visibility: visible; }
-      #printSection { position: absolute; left: 0; top: 0; width: 80mm; padding: 10px; font-family: monospace; background: white; }
-      .receipt-header { text-align: center; border-bottom: 1px dashed black; padding-bottom: 10px; margin-bottom: 10px;}
-      .receipt-item { display: flex; justify-content: space-between; margin-bottom: 5px; }
-      .receipt-total { border-top: 1px dashed black; margin-top: 10px; padding-top: 10px; font-weight: bold; text-align: right; }
-    }
-    
     .pos-grid { gap: 14px; }
     .page.active.pos-grid { display: grid; grid-template-columns: 1fr; }
     .menu-item-btn { background: linear-gradient(150deg, #ffffff, #f4f2ff); border: 1px solid #ddd; padding: 10px; border-radius: 12px; cursor: pointer; text-align: center; font-size: 13px; box-shadow: 0 6px 14px rgba(62, 42, 113, 0.1); }
@@ -379,9 +368,9 @@
       let total = 0;
       cart.forEach((item, index) => {
         total += item.price * item.qty;
-        cartDiv.innerHTML += `<li style="display:flex; justify-content:space-between; margin-bottom:8px;">
+        cartDiv.innerHTML += `<li class="cart-row">
           <span>${item.qty}x ${item.name}</span>
-          <span>₹${item.price * item.qty} <button onclick="cart.splice(${index},1); renderCart();" style="border:none; background:none; color:red; cursor:pointer;">✖</button></span>
+          <span>₹${item.price * item.qty} <button onclick="cart.splice(${index},1); renderCart();" class="cart-remove">✖</button></span>
         </li>`;
       });
       document.getElementById('cartTotal').innerText = total;
@@ -418,7 +407,6 @@
       saveBtn.innerText = editingOrderId ? 'Saving Changes...' : 'Saving...';
       saveBtn.disabled = true;
       google.script.run.withSuccessHandler(function(res) {
-        printReceipt(res);
         cart = [];
         renderCart();
         document.getElementById('clientName').value = '';

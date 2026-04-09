@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    :root {
+      --amz-nav: #131921;
+      --amz-nav-light: #232f3e;
+      --amz-orange: #f90;
+      --bg: #eaeded;
+      --text: #0f1111;
+    }
+    body { font-family: Arial, sans-serif; margin: 0; background-color: var(--bg); color: var(--text); }
+    
+    /* Navbar */
+    .header { background-color: var(--amz-nav); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { margin: 0; font-size: 24px; }
+    .header span { color: var(--amz-orange); font-size: 14px; }
+    .nav-bar { background-color: var(--amz-nav-light); padding: 5px 20px; display: flex; gap: 15px; overflow-x: auto; white-space: nowrap; }
+    .nav-btn { background: none; border: 1px solid transparent; color: white; cursor: pointer; padding: 8px 12px; font-weight: bold; border-radius: 3px; }
+    .nav-btn:hover, .nav-btn.active { border-color: white; }
+
+    /* Layout */
+    .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .card { background: white; padding: 20px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    
+    /* Forms & Buttons */
+    input, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #a6a6a6; border-radius: 3px; box-sizing: border-box; }
+    input:focus, select:focus { border-color: var(--amz-orange); outline: none; box-shadow: 0 0 0 2px rgba(255,153,0,0.5); }
+    .btn-primary { background-color: #ffd814; border: 1px solid #fcd200; border-radius: 8px; padding: 10px 20px; cursor: pointer; width: 100%; font-weight: bold; box-shadow: 0 2px 5px rgba(213,217,217,.5); }
+    .btn-primary:hover { background-color: #f7ca00; border-color: #f2c200; }
+    .btn-secondary { background-color: #e3e6e6; border: 1px solid #d5d9d9; border-radius: 8px; padding: 8px 15px; cursor: pointer; }
+    
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
+    th { background-color: #f3f3f3; }
+    .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; }
+    .status-Active, .status-Delivered, .status-Confirmed { background: #067d62; }
+    .status-Inactive, .status-Cancelled { background: #cc0c39; }
+    .status-Booked { background: var(--amz-orange); color: black; }
+
+    /* Print Receipt */
+    #printSection { display: none; }
+    @media print {
+      body * { visibility: hidden; }
+      #printSection, #printSection * { visibility: visible; }
+      #printSection { position: absolute; left: 0; top: 0; width: 80mm; padding: 10px; font-family: monospace; background: white; }
+      .receipt-header { text-align: center; border-bottom: 1px dashed black; padding-bottom: 10px; margin-bottom: 10px;}
+      .receipt-item { display: flex; justify-content: space-between; margin-bottom: 5px; }
+      .receipt-total { border-top: 1px dashed black; margin-top: 10px; padding-top: 10px; font-weight: bold; text-align: right; }
+    }
+    
+    .pos-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    @media (max-width: 768px) { .pos-grid { grid-template-columns: 1fr; } }
+    .menu-item-btn { background: white; border: 1px solid #ddd; padding: 15px; border-radius: 4px; cursor: pointer; text-align: center; }
+    .menu-item-btn:hover { border-color: var(--amz-orange); box-shadow: 0 0 5px rgba(255,153,0,0.5); }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Octane Pizza <span style="margin-left:10px;">Gotri, Vadodara</span></h1>
+  </div>
+  <div class="nav-bar">
+    <button class="nav-btn active" onclick="nav('pos')">Point of Sale</button>
+    <button class="nav-btn" onclick="nav('orders'); loadOrders();">Orders</button>
+    <button class="nav-btn" onclick="nav('tables'); loadTableSetup();">Tables</button>
+    <button class="nav-btn" onclick="nav('menu'); loadMenuSetup();">Menu</button>
+    <button class="nav-btn" onclick="nav('expenses'); loadExpenses();">Expenses</button>
+  </div>
+
+  <div class="container">
+    
+    <div id="pos" class="page active pos-grid">
+      <div class="card">
+        <h3>Menu</h3>
+        <div id="posMenuList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px;">
+          </div>
+      </div>
+      <div class="card">
+        <h3>Current Order</h3>
+        <ul id="cartItems" style="list-style: none; padding: 0;"></ul>
+        <h2 style="text-align: right;">Total: ₹<span id="cartTotal">0</span></h2>
+        
+        <label style="font-size: 12px; font-weight: bold;">Select Table:</label>
+        <select id="posTableSelect">
+          <option value="Takeaway">Takeaway / No Table</option>
+        </select>
+        
+        <label style="font-size: 12px; font-weight: bold;">Payment Mode:</label>
+        <select id="paymentMode">
+          <option value="Cash">Cash</option>
+          <option value="UPI">UPI</option>
+          <option value="Card">Card</option>
+        </select>
+        
+        <button class="btn-primary" onclick="processOrder()">Book Order</button>
+      </div>
+    </div>
+
+    <div id="orders" class="page card">
+      <h3>Order Management</h3>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead><tr><th>ID</th><th>Date</th><th>Table</th><th>Total</th><th>Mode</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="ordersTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tables" class="page card">
+      <h3>Table Management</h3>
+      <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+        <input type="hidden" id="tableId">
+        <input type="text" id="tableName" placeholder="Table Name (e.g., Table 1)" style="flex:1;">
+        <input type="number" id="tableCapacity" placeholder="Capacity" style="flex:1;">
+        <select id="tableStatus" style="flex:1;">
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+        <button class="btn-primary" style="width: auto;" onclick="saveTableUI()">Save</button>
+      </div>
+      <table>
+        <thead><tr><th>Table Name</th><th>Capacity</th><th>Status</th><th>Edit</th></tr></thead>
+        <tbody id="tableTableBody"></tbody>
+      </table>
+    </div>
+
+    <div id="menu" class="page card">
+      <h3>Menu Management</h3>
+      <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+        <input type="hidden" id="menuId">
+        <input type="text" id="menuName" placeholder="Item Name" style="flex:1;">
+        <input type="text" id="menuCategory" placeholder="Category" style="flex:1;">
+        <input type="number" id="menuPrice" placeholder="Price (₹)" style="flex:1;">
+        <select id="menuStatus" style="flex:1;">
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+        <button class="btn-primary" style="width: auto;" onclick="saveMenu()">Save</button>
+      </div>
+      <table>
+        <thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Status</th><th>Edit</th></tr></thead>
+        <tbody id="menuTableBody"></tbody>
+      </table>
+    </div>
+
+    <div id="expenses" class="page card">
+      <h3>Record Expense</h3>
+      <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+        <select id="expCategory" style="flex:1;">
+          <option value="Raw Material">Raw Material</option>
+          <option value="Staff">Staff</option>
+          <option value="Utility">Utility</option>
+          <option value="Misc">Misc</option>
+        </select>
+        <input type="number" id="expAmount" placeholder="Amount (₹)" style="flex:1;">
+        <input type="text" id="expDesc" placeholder="Description" style="flex:2;">
+        <button class="btn-primary" style="width: auto;" onclick="saveExpense()">Save</button>
+      </div>
+      <table>
+        <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead>
+        <tbody id="expenseTableBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <div id="printSection">
+    <div class="receipt-header">
+      <h2 style="margin:0;">OCTANE PIZZA</h2>
+      <p style="margin:5px 0; font-size:12px;">Gotri, Vadodara<br>Thank you!</p>
+    </div>
+    <p style="font-size: 14px;">
+      Order: <span id="printId"></span><br>
+      Date: <span id="printDate"></span><br>
+      Table: <span id="printTable" style="font-weight: bold;"></span>
+    </p>
+    <div id="printItems" style="border-top:1px dashed black; padding-top:5px; font-size: 14px;"></div>
+    <div class="receipt-total">
+      Total: ₹<span id="printTotal"></span><br>
+      <span style="font-size:12px; font-weight:normal;">Mode: <span id="printMode"></span></span>
+    </div>
+  </div>
+
+  <script>
+    let globalMenu = [];
+    let cart = [];
+
+    // Navigation
+    function nav(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // Startup
+    window.onload = function() {
+      loadPosMenu();
+      loadTableSetup();
+    };
+
+    // --- POS FUNCTIONS ---
+    function loadPosMenu() {
+      google.script.run.withSuccessHandler(function(menu) {
+        globalMenu = menu;
+        const posDiv = document.getElementById('posMenuList');
+        posDiv.innerHTML = '';
+        menu.filter(m => m.status === 'Active').forEach(item => {
+          posDiv.innerHTML += `<div class="menu-item-btn" onclick="addToCart('${item.id}', '${item.name}', ${item.price})">
+            <strong>${item.name}</strong><br>₹${item.price}
+          </div>`;
+        });
+      }).getMenu();
+    }
+
+    function addToCart(id, name, price) {
+      const existing = cart.find(i => i.id === id);
+      if (existing) existing.qty++;
+      else cart.push({ id, name, price, qty: 1 });
+      renderCart();
+    }
+
+    function renderCart() {
+      const cartDiv = document.getElementById('cartItems');
+      cartDiv.innerHTML = '';
+      let total = 0;
+      cart.forEach((item, index) => {
+        total += item.price * item.qty;
+        cartDiv.innerHTML += `<li style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span>${item.qty}x ${item.name}</span>
+          <span>₹${item.price * item.qty} <button onclick="cart.splice(${index},1); renderCart();" style="border:none; background:none; color:red; cursor:pointer;">✖</button></span>
+        </li>`;
+      });
+      document.getElementById('cartTotal').innerText = total;
+    }
+
+    function processOrder() {
+      if (cart.length === 0) return alert('Cart is empty!');
+      const order = {
+        items: cart,
+        table: document.getElementById('posTableSelect').value,
+        total: document.getElementById('cartTotal').innerText,
+        mode: document.getElementById('paymentMode').value
+      };
+      
+      document.querySelector('#pos .btn-primary').innerText = 'Booking...';
+      google.script.run.withSuccessHandler(function(res) {
+        printReceipt(res);
+        cart = [];
+        renderCart();
+        document.querySelector('#pos .btn-primary').innerText = 'Book Order';
+        alert('Order Booked Successfully!');
+      }).saveOrder(order);
+    }
+
+    function printReceipt(orderData) {
+      document.getElementById('printId').innerText = orderData.id;
+      document.getElementById('printDate').innerText = orderData.date;
+      document.getElementById('printTable').innerText = orderData.table;
+      document.getElementById('printTotal').innerText = orderData.total;
+      document.getElementById('printMode').innerText = orderData.mode;
+      
+      let itemsHtml = '';
+      orderData.items.forEach(i => {
+        itemsHtml += `<div class="receipt-item"><span>${i.qty}x ${i.name}</span><span>${i.price * i.qty}</span></div>`;
+      });
+      document.getElementById('printItems').innerHTML = itemsHtml;
+      
+      window.print();
+    }
+
+    // --- TABLE SETUP LOGIC ---
+    function loadTableSetup() {
+      google.script.run.withSuccessHandler(function(tables) {
+        const tbody = document.getElementById('tableTableBody');
+        tbody.innerHTML = '';
+        
+        tables.forEach(t => {
+          tbody.innerHTML += `<tr>
+            <td>${t.name}</td><td>${t.capacity} pax</td>
+            <td><span class="status-badge status-${t.status}">${t.status}</span></td>
+            <td><button class="btn-secondary" onclick="editTable('${t.id}', '${t.name}', ${t.capacity}, '${t.status}')">Edit</button></td>
+          </tr>`;
+        });
+
+        const posSelect = document.getElementById('posTableSelect');
+        posSelect.innerHTML = '<option value="Takeaway">Takeaway / No Table</option>';
+        tables.filter(t => t.status === 'Active').forEach(t => {
+          posSelect.innerHTML += `<option value="${t.name}">${t.name} (${t.capacity} pax)</option>`;
+        });
+      }).getTables();
+    }
+
+    function saveTableUI() {
+      const table = {
+        id: document.getElementById('tableId').value,
+        name: document.getElementById('tableName').value,
+        capacity: document.getElementById('tableCapacity').value,
+        status: document.getElementById('tableStatus').value || 'Active'
+      };
+      if(!table.name) return alert('Table Name is required');
+      
+      google.script.run.withSuccessHandler(() => {
+        document.getElementById('tableId').value = '';
+        document.getElementById('tableName').value = '';
+        document.getElementById('tableCapacity').value = '';
+        loadTableSetup(); 
+      }).saveTable(table);
+    }
+
+    function editTable(id, name, capacity, status) {
+      document.getElementById('tableId').value = id;
+      document.getElementById('tableName').value = name;
+      document.getElementById('tableCapacity').value = capacity;
+      document.getElementById('tableStatus').value = status;
+    }
+
+    // --- MENU SETUP ---
+    function loadMenuSetup() {
+      google.script.run.withSuccessHandler(function(menu) {
+        const tbody = document.getElementById('menuTableBody');
+        tbody.innerHTML = '';
+        menu.forEach(item => {
+          tbody.innerHTML += `<tr>
+            <td>${item.name}</td><td>${item.category}</td><td>₹${item.price}</td>
+            <td><span class="status-badge status-${item.status}">${item.status}</span></td>
+            <td><button class="btn-secondary" onclick="editMenu('${item.id}', '${item.name}', '${item.category}', ${item.price}, '${item.status}')">Edit</button></td>
+          </tr>`;
+        });
+      }).getMenu();
+    }
+
+    function saveMenu() {
+      const item = {
+        id: document.getElementById('menuId').value,
+        name: document.getElementById('menuName').value,
+        category: document.getElementById('menuCategory').value,
+        price: document.getElementById('menuPrice').value,
+        status: document.getElementById('menuStatus').value || 'Active'
+      };
+      if(!item.name || !item.price) return alert('Name and Price required');
+      
+      google.script.run.withSuccessHandler(() => {
+        document.getElementById('menuId').value = '';
+        document.getElementById('menuName').value = '';
+        document.getElementById('menuPrice').value = '';
+        loadMenuSetup();
+        loadPosMenu();
+      }).saveMenuItem(item);
+    }
+
+    function editMenu(id, name, cat, price, status) {
+      document.getElementById('menuId').value = id;
+      document.getElementById('menuName').value = name;
+      document.getElementById('menuCategory').value = cat;
+      document.getElementById('menuPrice').value = price;
+      document.getElementById('menuStatus').value = status;
+    }
+
+    // --- ORDERS LOG ---
+    function loadOrders() {
+      google.script.run.withSuccessHandler(function(orders) {
+        const tbody = document.getElementById('ordersTableBody');
+        tbody.innerHTML = '';
+        orders.forEach(o => {
+          tbody.innerHTML += `<tr>
+            <td>${o.id}</td><td>${o.date}</td><td>${o.table || 'Takeaway'}</td><td>₹${o.total}</td><td>${o.mode}</td>
+            <td><span class="status-badge status-${o.status}">${o.status}</span></td>
+            <td>
+              <select onchange="updateStatus('${o.id}', this.value)" style="width:auto; padding:4px;">
+                <option value="">Action...</option>
+                <option value="Confirmed">Confirm</option>
+                <option value="Delivered">Deliver</option>
+                <option value="Cancelled">Cancel</option>
+              </select>
+            </td>
+          </tr>`;
+        });
+      }).getOrders();
+    }
+
+    function updateStatus(id, status) {
+      if(!status) return;
+      google.script.run.withSuccessHandler(loadOrders).updateOrderStatus(id, status);
+    }
+
+    // --- EXPENSES ---
+    function loadExpenses() {
+      google.script.run.withSuccessHandler(function(exp) {
+        const tbody = document.getElementById('expenseTableBody');
+        tbody.innerHTML = '';
+        exp.forEach(e => {
+          tbody.innerHTML += `<tr><td>${e.date}</td><td>${e.category}</td><td>${e.desc}</td><td>₹${e.amount}</td></tr>`;
+        });
+      }).getExpenses();
+    }
+
+    function saveExpense() {
+      const exp = {
+        category: document.getElementById('expCategory').value,
+        amount: document.getElementById('expAmount').value,
+        desc: document.getElementById('expDesc').value
+      };
+      if(!exp.amount) return alert('Amount required');
+      google.script.run.withSuccessHandler(() => {
+        document.getElementById('expAmount').value = '';
+        document.getElementById('expDesc').value = '';
+        loadExpenses();
+      }).saveExpense(exp);
+    }
+  </script>
+</body>
+</html>

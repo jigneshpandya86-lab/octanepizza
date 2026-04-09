@@ -25,7 +25,7 @@ function setupDatabase() {
   Logger.log("=====================================");
 }
 
-const DB_ID = 'PASTE_YOUR_SPREADSHEET_ID_HERE'; 
+const DB_ID = '1a4VY0pbPRmmUUU9W257XkZiOS5a93yg0VpZ4bzfnNzc'; 
 
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('Index')

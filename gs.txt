@@ -105,20 +105,43 @@ function getOrders() {
 
 function saveOrder(order) {
   const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Orders');
+  const data = sheet.getDataRange().getValues();
+  const now = new Date().toLocaleString();
+
+  if (order.id) {
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] == order.id) {
+        const currentMode = data[i][5] || 'Pending';
+        const currentStatus = data[i][6] || 'Booked';
+        sheet.getRange(i + 1, 2, 1, 8).setValues([[
+          now,
+          order.table,
+          JSON.stringify(order.items || []),
+          order.total,
+          currentMode,
+          currentStatus,
+          order.customerName || 'Walk-in',
+          order.customerPhone || '-'
+        ]]);
+        return { id: order.id, date: now, ...order, mode: currentMode, status: currentStatus };
+      }
+    }
+    throw new Error('Order not found: ' + order.id);
+  }
+
   const newId = 'ORD' + Math.floor(Math.random() * 10000);
-  const date = new Date().toLocaleString();
   sheet.appendRow([
     newId,
-    date,
+    now,
     order.table,
-    JSON.stringify(order.items),
+    JSON.stringify(order.items || []),
     order.total,
     'Pending',
     'Booked',
     order.customerName || 'Walk-in',
     order.customerPhone || '-'
   ]);
-  return { id: newId, date: date, ...order };
+  return { id: newId, date: now, ...order, status: 'Booked' };
 }
 
 function updateOrderStatus(orderId, newStatus) {
@@ -152,17 +175,19 @@ function completeOrderAndRecordPayment(orderId, paymentMode) {
   return { ok: true, orderId: orderId, status: 'Completed', paymentMode: paymentMode };
 }
 
-function completeOrderAndRecordPayment(orderId, paymentMode) {
+function recordOrderPayment(orderId, paymentMode) {
   const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Orders');
   const data = sheet.getDataRange().getValues();
+  let updated = false;
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] == orderId) {
       sheet.getRange(i + 1, 6).setValue(paymentMode); // Column 6 is Payment Mode
-      sheet.getRange(i + 1, 7).setValue('Completed'); // Column 7 is Status
+      updated = true;
       break;
     }
   }
-  return true;
+  if (!updated) throw new Error('Order not found: ' + orderId);
+  return { ok: true, orderId: orderId, paymentMode: paymentMode };
 }
 
 // --- EXPENSE FUNCTIONS ---

@@ -143,6 +143,11 @@
 
     <div id="orders" class="page card">
       <h3>Order Management</h3>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:8px;">
+        <input id="orderSearchInput" type="text" placeholder="Search by Order ID / Client / Phone / Table" style="flex:1; min-width:260px; margin:0;" oninput="filterOrdersList()">
+        <button class="btn-secondary" onclick="clearOrderSearch()">Clear</button>
+      </div>
+      <p id="ordersSummary" style="margin: 0; font-size: 12px; color:#4f5f73;"></p>
       <div style="overflow-x: auto;">
         <table>
           <thead><tr><th>ID</th><th>Date</th><th>Client</th><th>Phone</th><th>Table</th><th>Total</th><th>Payment</th><th>Status</th><th>Actions</th></tr></thead>
@@ -312,6 +317,7 @@
     window.onload = function() {
       loadPosMenu();
       loadTableSetup();
+      loadOrders();
     };
 
     // --- POS FUNCTIONS ---
@@ -503,8 +509,23 @@
     function loadOrders() {
       google.script.run.withSuccessHandler(function(orders) {
         currentOrders = orders;
+        renderOrders(orders);
+      }).withFailureHandler(function(err) {
+        const tbody = document.getElementById('ordersTableBody');
+        tbody.innerHTML = '<tr><td colspan="9">Unable to load orders. Please refresh.</td></tr>';
+        document.getElementById('ordersSummary').innerText = '';
+        showToast(`Orders load failed: ${err.message || err}`, 'info');
+      }).getOrders();
+    }
+
+    function renderOrders(orders) {
         const tbody = document.getElementById('ordersTableBody');
         tbody.innerHTML = '';
+        if (!orders.length) {
+          tbody.innerHTML = '<tr><td colspan="9">No orders found for today.</td></tr>';
+          document.getElementById('ordersSummary').innerText = 'Showing 0 orders for today.';
+          return;
+        }
         orders.forEach(o => {
           const isClosed = o.status === 'Closed' || o.status === 'Completed';
           const isCancelled = o.status === 'Cancelled';
@@ -521,7 +542,26 @@
             </td>
           </tr>`;
         });
-      }).getOrders();
+        document.getElementById('ordersSummary').innerText = `Showing ${orders.length} order(s) for today.`;
+    }
+
+    function filterOrdersList() {
+      const q = (document.getElementById('orderSearchInput').value || '').toLowerCase().trim();
+      if (!q) {
+        renderOrders(currentOrders);
+        return;
+      }
+      const filtered = currentOrders.filter(o => {
+        const haystack = `${o.id} ${o.customerName || ''} ${o.customerPhone || ''} ${o.table || ''}`.toLowerCase();
+        return haystack.includes(q);
+      });
+      renderOrders(filtered);
+      document.getElementById('ordersSummary').innerText = `Showing ${filtered.length} of ${currentOrders.length} order(s) for today.`;
+    }
+
+    function clearOrderSearch() {
+      document.getElementById('orderSearchInput').value = '';
+      renderOrders(currentOrders);
     }
 
     function updateStatus(id, status) {

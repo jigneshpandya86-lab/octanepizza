@@ -54,8 +54,9 @@
       .receipt-total { border-top: 1px dashed black; margin-top: 10px; padding-top: 10px; font-weight: bold; text-align: right; }
     }
     
-    .pos-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-    @media (max-width: 768px) { .pos-grid { grid-template-columns: 1fr; } }
+    .pos-grid { gap: 20px; }
+    .page.active.pos-grid { display: grid; grid-template-columns: 2fr 1fr; }
+    @media (max-width: 768px) { .page.active.pos-grid { grid-template-columns: 1fr; } }
     .menu-item-btn { background: white; border: 1px solid #ddd; padding: 15px; border-radius: 4px; cursor: pointer; text-align: center; }
     .menu-item-btn:hover { border-color: var(--amz-orange); box-shadow: 0 0 5px rgba(255,153,0,0.5); }
 

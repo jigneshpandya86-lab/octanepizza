@@ -1,0 +1,230 @@
+function setupDatabase() {
+  const ss = SpreadsheetApp.create("Octane Pizza - Database");
+  
+  // Create Sheets and Headers
+  const menuSheet = ss.insertSheet("Menu");
+  menuSheet.appendRow(["ID", "Item Name", "Category", "Price", "Status"]);
+  
+  const orderSheet = ss.insertSheet("Orders");
+  orderSheet.appendRow(["Order ID", "Date", "Table", "Items (JSON)", "Total", "Payment Mode", "Status"]);
+  
+  const tableSheet = ss.insertSheet("Tables");
+  tableSheet.appendRow(["Table ID", "Table Name", "Capacity", "Status"]);
+  
+  const expenseSheet = ss.insertSheet("Expenses");
+  expenseSheet.appendRow(["Expense ID", "Date", "Category", "Amount", "Description"]);
+  
+  // Clean up default sheet
+  const defaultSheet = ss.getSheetByName("Sheet1");
+  if (defaultSheet) ss.deleteSheet(defaultSheet);
+  
+  Logger.log("=====================================");
+  Logger.log("YOUR SPREADSHEET ID IS: ");
+  Logger.log(ss.getId());
+  Logger.log("Copy this ID into your main Code.gs file.");
+  Logger.log("=====================================");
+}
+
+const DB_ID = 'PASTE_YOUR_SPREADSHEET_ID_HERE'; 
+
+function doGet() {
+  return HtmlService.createHtmlOutputFromFile('Index')
+    .setTitle('Octane Pizza POS')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+// --- MENU FUNCTIONS ---
+function getMenu() {
+  const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Menu');
+  const data = sheet.getDataRange().getValues();
+  data.shift(); 
+  return data.map(row => ({ id: row[0], name: row[1], category: row[2], price: row[3], status: row[4] }));
+}
+
+function saveMenuItem(item) {
+  const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Menu');
+  if (item.id) {
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] == item.id) {
+        sheet.getRange(i + 1, 2, 1, 4).setValues([[item.name, item.category, item.price, item.status]]);
+        break;
+      }
+    }
+  } else {
+    const newId = 'M' + new Date().getTime();
+    sheet.appendRow([newId, item.name, item.category, item.price, 'Active']);
+  }
+  return true;
+}
+
+// --- TABLE FUNCTIONS ---
+function getTables() {
+  const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Tables');
+  const data = sheet.getDataRange().getValues();
+  data.shift(); 
+  return data.map(row => ({ id: row[0], name: row[1], capacity: row[2], status: row[3] }));
+}
+
+function saveTable(table) {
+  const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Tables');
+  if (table.id) {
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] == table.id) {
+        sheet.getRange(i + 1, 2, 1, 3).setValues([[table.name, table.capacity, table.status]]);
+        break;
+      }
+    }
+  } else {
+    const newId = 'TBL' + new Date().getTime();
+    sheet.appendRow([newId, table.name, table.capacity, 'Active']);
+  }
+  return true;
+}
+
+// --- ORDER FUNCTIONS ---
+function getOrders() {
+  const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Orders');
+  const data = sheet.getDataRange().getValues();
+  data.shift();
+  // Columns: 0:ID, 1:Date, 2:Table, 3:Items, 4:Total, 5:Mode, 6:Status
+  return data.map(row => ({ id: row[0], date: row[1], table: row[2], items: JSON.parse(row[3]), total: row[4], mode: row[5], status: row[6] })).reverse();
+}
+
+function saveOrder(order) {
+  const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Orders');
+  const newId = 'ORD' + Math.floor(Math.random() * 10000);
+  const date = new Date().toLocaleString();
+  sheet.appendRow([newId, date, order.table, JSON.stringify(order.items), order.total, order.mode, 'Booked']);
+  return { id: newId, date: date, ...order };
+}
+
+function updateOrderStatus(orderId, newStatus) {
+  const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Orders');
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] == orderId) {
+      sheet.getRange(i + 1, 7).setValue(newStatus); // Column 7 is Status
+      break;
+    }
+  }
+  return true;
+}
+
+// --- EXPENSE FUNCTIONS ---
+function getExpenses() {
+  const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Expenses');
+  const data = sheet.getDataRange().getValues();
+  data.shift();
+  return data.map(row => ({ id: row[0], date: row[1], category: row[2], amount: row[3], desc: row[4] })).reverse();
+}
+
+function saveExpense(expense) {
+  const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Expenses');
+  const newId = 'EXP' + new Date().getTime();
+  const date = new Date().toLocaleDateString();
+  sheet.appendRow([newId, date, expense.category, expense.amount, expense.desc]);
+  return true;
+}
+function runAllTests() {
+  Logger.log("🚀 STARTING BACKEND TESTS...");
+  Logger.log("=====================================");
+
+  // 1. TEST MENU FUNCTIONS
+  Logger.log("📦 TESTING MENU:");
+  const testMenuItem = {
+    name: "Test Margherita " + Math.floor(Math.random() * 1000),
+    category: "Pizza",
+    price: 199,
+    status: "Active"
+  };
+  
+  saveMenuItem(testMenuItem);
+  Logger.log("✔️ saveMenuItem executed.");
+  
+  const menuData = getMenu();
+  const foundMenu = menuData.find(m => m.name === testMenuItem.name);
+  if (foundMenu) {
+    Logger.log("✔️ getMenu executed. Successfully found the test item!");
+  } else {
+    Logger.log("❌ getMenu FAILED to find the test item.");
+  }
+  Logger.log("-------------------------------------");
+
+  // 2. TEST TABLE FUNCTIONS
+  Logger.log("🪑 TESTING TABLES:");
+  const testTable = {
+    name: "Test Table " + Math.floor(Math.random() * 100),
+    capacity: 4,
+    status: "Active"
+  };
+
+  saveTable(testTable);
+  Logger.log("✔️ saveTable executed.");
+
+  const tableData = getTables();
+  const foundTable = tableData.find(t => t.name === testTable.name);
+  if (foundTable) {
+    Logger.log("✔️ getTables executed. Successfully found the test table!");
+  } else {
+    Logger.log("❌ getTables FAILED to find the test table.");
+  }
+  Logger.log("-------------------------------------");
+
+  // 3. TEST ORDER FUNCTIONS
+  Logger.log("🛒 TESTING ORDERS:");
+  const testOrder = {
+    items: [{ id: foundMenu ? foundMenu.id : "M000", name: testMenuItem.name, price: 199, qty: 2 }],
+    table: testTable.name,
+    total: 398,
+    mode: "Cash"
+  };
+
+  const savedOrder = saveOrder(testOrder);
+  Logger.log("✔️ saveOrder executed. Order ID: " + savedOrder.id);
+
+  let orderData = getOrders();
+  const foundOrder = orderData.find(o => o.id === savedOrder.id);
+  if (foundOrder) {
+    Logger.log("✔️ getOrders executed. Successfully retrieved order.");
+    
+    // Test Status Update
+    updateOrderStatus(savedOrder.id, "Delivered");
+    Logger.log("✔️ updateOrderStatus executed (Set to 'Delivered').");
+    
+    // Fetch again to verify update
+    orderData = getOrders();
+    const updatedOrder = orderData.find(o => o.id === savedOrder.id);
+    if (updatedOrder && updatedOrder.status === "Delivered") {
+      Logger.log("✔️ Order status successfully updated in database!");
+    } else {
+      Logger.log("❌ Failed to verify updated order status.");
+    }
+  } else {
+    Logger.log("❌ getOrders FAILED to find the new order.");
+  }
+  Logger.log("-------------------------------------");
+
+  // 4. TEST EXPENSE FUNCTIONS
+  Logger.log("💸 TESTING EXPENSES:");
+  const testExpense = {
+    category: "Misc",
+    amount: 150,
+    desc: "Test running automated script"
+  };
+
+  saveExpense(testExpense);
+  Logger.log("✔️ saveExpense executed.");
+
+  const expenseData = getExpenses();
+  const foundExpense = expenseData.find(e => e.desc === testExpense.desc);
+  if (foundExpense) {
+    Logger.log("✔️ getExpenses executed. Successfully found the test expense!");
+  } else {
+    Logger.log("❌ getExpenses FAILED to find the test expense.");
+  }
+  Logger.log("=====================================");
+  Logger.log("✅ ALL TESTS COMPLETED. Check your spreadsheet to see the dummy data!");
+}

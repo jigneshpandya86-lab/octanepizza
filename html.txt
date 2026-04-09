@@ -500,15 +500,16 @@
         const tbody = document.getElementById('ordersTableBody');
         tbody.innerHTML = '';
         orders.forEach(o => {
+          const isCompleted = o.status === 'Completed';
           tbody.innerHTML += `<tr>
             <td>${o.id}</td><td>${o.date}</td><td>${o.customerName || 'Walk-in'}</td><td>${o.customerPhone || '-'}</td><td>${o.table || 'Takeaway'}</td><td>₹${o.total}</td><td>${o.mode || 'Pending'}</td>
             <td><span class="status-badge status-${o.status}">${o.status}</span></td>
             <td>
-              <select onchange="updateStatus('${o.id}', this.value)" style="width:auto; padding:4px;">
+              <select onchange="updateStatus('${o.id}', this.value)" style="width:auto; padding:4px;" ${isCompleted ? 'disabled' : ''}>
                 <option value="">Action...</option>
-                <option value="Confirmed">Confirm</option>
+                <option value="Confirmed" ${o.status === 'Confirmed' ? 'selected' : ''}>Confirm</option>
                 <option value="Completed">Complete + Payment</option>
-                <option value="Cancelled">Cancel</option>
+                <option value="Cancelled" ${o.status === 'Cancelled' ? 'selected' : ''}>Cancel</option>
               </select>
             </td>
           </tr>`;
@@ -524,7 +525,31 @@
         document.getElementById('paymentModal').classList.add('show');
         return;
       }
-      google.script.run.withSuccessHandler(loadOrders).updateOrderStatus(id, status);
+      google.script.run
+        .withSuccessHandler(() => {
+          showToast(`Order ${id} marked ${status}.`, 'success');
+          loadOrders();
+        })
+        .withFailureHandler((err) => showToast(`Status update failed: ${err.message || err}`, 'info'))
+        .updateOrderStatus(id, status);
+    }
+
+    function closePaymentModal() {
+      pendingPaymentOrder = null;
+      document.getElementById('paymentModal').classList.remove('show');
+    }
+
+    function saveCompletedPayment() {
+      if (!pendingPaymentOrder) return;
+      const payMode = document.getElementById('completePaymentMode').value;
+      google.script.run
+        .withSuccessHandler(() => {
+          showToast(`Order ${pendingPaymentOrder} completed and payment (${payMode}) recorded.`, 'success');
+          closePaymentModal();
+          loadOrders();
+        })
+        .withFailureHandler((err) => showToast(`Payment save failed: ${err.message || err}`, 'info'))
+        .completeOrderAndRecordPayment(pendingPaymentOrder, payMode);
     }
 
     function closePaymentModal() {

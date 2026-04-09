@@ -124,13 +124,32 @@ function saveOrder(order) {
 function updateOrderStatus(orderId, newStatus) {
   const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Orders');
   const data = sheet.getDataRange().getValues();
+  let updated = false;
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] == orderId) {
       sheet.getRange(i + 1, 7).setValue(newStatus); // Column 7 is Status
+      updated = true;
       break;
     }
   }
-  return true;
+  if (!updated) throw new Error('Order not found: ' + orderId);
+  return { ok: true, orderId: orderId, status: newStatus };
+}
+
+function completeOrderAndRecordPayment(orderId, paymentMode) {
+  const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Orders');
+  const data = sheet.getDataRange().getValues();
+  let updated = false;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] == orderId) {
+      sheet.getRange(i + 1, 6).setValue(paymentMode); // Column 6 is Payment Mode
+      sheet.getRange(i + 1, 7).setValue('Completed'); // Column 7 is Status
+      updated = true;
+      break;
+    }
+  }
+  if (!updated) throw new Error('Order not found: ' + orderId);
+  return { ok: true, orderId: orderId, status: 'Completed', paymentMode: paymentMode };
 }
 
 function completeOrderAndRecordPayment(orderId, paymentMode) {

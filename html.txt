@@ -72,6 +72,19 @@
     .modal p { margin: 0 0 8px; color: #2c3b4d; }
     .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
     .btn-ghost { border: 1px solid #d5d9d9; background: #fff; border-radius: 8px; padding: 9px 16px; cursor: pointer; }
+    #printSection { display: none; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printSection, #printSection * { visibility: visible; }
+      #printSection {
+        display: block;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+    }
 
     @media (max-width: 768px) {
       .header { padding: 10px 14px; }

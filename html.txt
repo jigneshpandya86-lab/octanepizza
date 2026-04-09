@@ -552,6 +552,21 @@
         .completeOrderAndRecordPayment(pendingPaymentOrder, payMode);
     }
 
+    function closePaymentModal() {
+      pendingPaymentOrder = null;
+      document.getElementById('paymentModal').classList.remove('show');
+    }
+
+    function saveCompletedPayment() {
+      if (!pendingPaymentOrder) return;
+      const payMode = document.getElementById('completePaymentMode').value;
+      google.script.run.withSuccessHandler(() => {
+        showToast(`Order ${pendingPaymentOrder} completed and payment (${payMode}) recorded.`, 'success');
+        closePaymentModal();
+        loadOrders();
+      }).completeOrderAndRecordPayment(pendingPaymentOrder, payMode);
+    }
+
     // --- EXPENSES ---
     function loadExpenses() {
       google.script.run.withSuccessHandler(function(exp) {

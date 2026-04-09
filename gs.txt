@@ -25,7 +25,7 @@ function setupDatabase() {
   Logger.log("=====================================");
 }
 
-const DB_ID = 'PASTE_YOUR_SPREADSHEET_ID_HERE'; 
+const DB_ID = '1a4VY0pbPRmmUUU9W257XkZiOS5a93yg0VpZ4bzfnNzc'; 
 
 function doGet() {
   return HtmlService.createHtmlOutputFromFile('Index')
@@ -150,6 +150,19 @@ function completeOrderAndRecordPayment(orderId, paymentMode) {
   }
   if (!updated) throw new Error('Order not found: ' + orderId);
   return { ok: true, orderId: orderId, status: 'Completed', paymentMode: paymentMode };
+}
+
+function completeOrderAndRecordPayment(orderId, paymentMode) {
+  const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Orders');
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] == orderId) {
+      sheet.getRange(i + 1, 6).setValue(paymentMode); // Column 6 is Payment Mode
+      sheet.getRange(i + 1, 7).setValue('Completed'); // Column 7 is Status
+      break;
+    }
+  }
+  return true;
 }
 
 // --- EXPENSE FUNCTIONS ---

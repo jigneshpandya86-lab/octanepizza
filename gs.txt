@@ -89,18 +89,32 @@ function getOrders() {
   const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Orders');
   const data = sheet.getDataRange().getValues();
   data.shift();
+  const timeZone = Session.getScriptTimeZone() || 'Asia/Kolkata';
+  const today = Utilities.formatDate(new Date(), timeZone, 'yyyy-MM-dd');
   // Columns: 0:ID, 1:Date, 2:Table, 3:Items, 4:Total, 5:Mode, 6:Status, 7:Customer Name, 8:Customer Phone
-  return data.map(row => ({
-    id: row[0],
-    date: row[1],
-    table: row[2],
-    items: JSON.parse(row[3]),
-    total: row[4],
-    mode: row[5] || 'Pending',
-    status: row[6],
-    customerName: row[7] || 'Walk-in',
-    customerPhone: row[8] || '-'
-  })).reverse();
+  return data
+    .map(row => {
+      const parsedDate = parseOrderDate(row[1], timeZone);
+      const orderDay = parsedDate ? Utilities.formatDate(parsedDate, timeZone, 'yyyy-MM-dd') : '';
+      return {
+        id: row[0],
+        date: parsedDate ? Utilities.formatDate(parsedDate, timeZone, 'dd/MM/yyyy, HH:mm:ss') : row[1],
+        table: row[2],
+        items: parseOrderItems(row[3]),
+        total: row[4],
+        mode: row[5] || 'Pending',
+        status: row[6] || 'Booked',
+        customerName: row[7] || 'Walk-in',
+        customerPhone: row[8] || '-',
+        orderDay: orderDay
+      };
+    })
+    .filter(order => order.orderDay === today)
+    .map(order => {
+      delete order.orderDay;
+      return order;
+    })
+    .reverse();
 }
 
 function saveOrder(order) {
@@ -208,6 +222,43 @@ function saveExpense(expense) {
   const date = new Date().toLocaleDateString();
   sheet.appendRow([newId, date, expense.category, amount, expense.desc || '']);
   return true;
+}
+
+function parseOrderItems(rawItems) {
+  if (!rawItems) return [];
+  if (Array.isArray(rawItems)) return rawItems;
+  const json = String(rawItems).trim();
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    Logger.log('Invalid order items JSON: ' + json);
+    return [];
+  }
+}
+
+function parseOrderDate(rawDate, timeZone) {
+  if (!rawDate) return null;
+  if (Object.prototype.toString.call(rawDate) === '[object Date]' && !isNaN(rawDate.getTime())) {
+    return rawDate;
+  }
+
+  const dateStr = String(rawDate).trim();
+  if (!dateStr) return null;
+  const direct = new Date(dateStr);
+  if (!isNaN(direct.getTime())) return direct;
+
+  const parts = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (!parts) return null;
+  const day = Number(parts[1]);
+  const month = Number(parts[2]) - 1;
+  const year = Number(parts[3]);
+  const hour = Number(parts[4] || 0);
+  const minute = Number(parts[5] || 0);
+  const second = Number(parts[6] || 0);
+  const iso = Utilities.formatDate(new Date(year, month, day, hour, minute, second), timeZone, "yyyy-MM-dd'T'HH:mm:ss");
+  return new Date(iso);
 }
 function runAllTests() {
   Logger.log("🚀 STARTING BACKEND TESTS...");

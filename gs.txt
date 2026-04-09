@@ -168,6 +168,7 @@ function completeOrderAndRecordPayment(orderId, paymentMode) {
 // --- EXPENSE FUNCTIONS ---
 function getExpenses() {
   const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Expenses');
+  if (!sheet) throw new Error("Expenses sheet not found. Please create a sheet named 'Expenses'.");
   const data = sheet.getDataRange().getValues();
   data.shift();
   return data.map(row => ({ id: row[0], date: row[1], category: row[2], amount: row[3], desc: row[4] })).reverse();
@@ -175,9 +176,12 @@ function getExpenses() {
 
 function saveExpense(expense) {
   const sheet = SpreadsheetApp.openById(DB_ID).getSheetByName('Expenses');
+  if (!sheet) throw new Error("Expenses sheet not found. Please create a sheet named 'Expenses'.");
+  const amount = Number(expense.amount);
+  if (!amount || amount <= 0) throw new Error('Expense amount must be greater than 0.');
   const newId = 'EXP' + new Date().getTime();
   const date = new Date().toLocaleDateString();
-  sheet.appendRow([newId, date, expense.category, expense.amount, expense.desc]);
+  sheet.appendRow([newId, date, expense.category, amount, expense.desc || '']);
   return true;
 }
 function runAllTests() {

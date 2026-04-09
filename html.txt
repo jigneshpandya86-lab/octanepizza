@@ -39,7 +39,7 @@
     th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
     th { background-color: #f3f3f3; }
     .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; }
-    .status-Active, .status-Delivered, .status-Confirmed, .status-Completed { background: #067d62; }
+    .status-Active, .status-Delivered, .status-Confirmed, .status-Completed, .status-Closed { background: #067d62; }
     .status-Inactive, .status-Cancelled { background: #cc0c39; }
     .status-Booked { background: var(--amz-orange); color: black; }
 
@@ -132,8 +132,8 @@
           <option value="Takeaway">Takeaway / No Table</option>
         </select>
         
-        <p style="font-size:12px; margin-top:6px; color:#4f5f73;">Payment is recorded only after order is marked complete.</p>
-        <button class="btn-primary" onclick="processOrder()">Book Order</button>
+        <p style="font-size:12px; margin-top:6px; color:#4f5f73;">Save new orders here. Use Orders tab to edit, close, record payment, or cancel.</p>
+        <button id="saveOrderBtn" class="btn-primary" onclick="processOrder()">Save Order</button>
       </div>
       <div class="card">
         <h3>Menu</h3>
@@ -219,12 +219,12 @@
 
   <div id="confirmModal" class="modal-overlay">
     <div class="modal">
-      <h4>Confirm Booking</h4>
+      <h4>Confirm Order</h4>
       <p id="confirmText"></p>
       <p id="confirmText2"></p>
       <div class="modal-actions">
         <button class="btn-ghost" onclick="closeConfirmModal()">Cancel</button>
-        <button class="btn-primary" style="width:auto;" onclick="confirmAndSaveOrder()">Confirm & Pay</button>
+        <button class="btn-primary" style="width:auto;" onclick="confirmAndSaveOrder()">Save Order</button>
       </div>
     </div>
   </div>
@@ -268,7 +268,9 @@
     let globalMenu = [];
     let cart = [];
     let pendingOrder = null;
+    let editingOrderId = '';
     let pendingPaymentOrder = null;
+    let currentOrders = [];
 
     // Navigation
     function nav(pageId, btnEl) {
@@ -350,6 +352,7 @@
     function processOrder() {
       if (cart.length === 0) return showToast('Cart is empty. Add items before booking.', 'info');
       pendingOrder = {
+        id: editingOrderId,
         items: cart,
         table: document.getElementById('posTableSelect').value,
         total: document.getElementById('cartTotal').innerText,
@@ -360,7 +363,7 @@
       if (pendingOrder.customerPhone !== '-' && !/^\d{10}$/.test(pendingOrder.customerPhone)) {
         return showToast('Please enter a valid 10-digit mobile number.', 'info');
       }
-      document.getElementById('confirmText').innerText = `Table: ${pendingOrder.table}`;
+      document.getElementById('confirmText').innerText = `${editingOrderId ? 'Updating' : 'Saving'} order for Table: ${pendingOrder.table}`;
       document.getElementById('confirmText2').innerText = `${pendingOrder.customerName} (${pendingOrder.customerPhone}) • Total: ₹${pendingOrder.total}`;
       document.getElementById('confirmModal').classList.add('show');
     }
@@ -373,17 +376,19 @@
     function confirmAndSaveOrder() {
       if (!pendingOrder) return;
       document.getElementById('confirmModal').classList.remove('show');
-      document.querySelector('#pos .btn-primary').innerText = 'Booking...';
-      document.querySelector('#pos .btn-primary').disabled = true;
+      const saveBtn = document.getElementById('saveOrderBtn');
+      saveBtn.innerText = editingOrderId ? 'Saving Changes...' : 'Saving...';
+      saveBtn.disabled = true;
       google.script.run.withSuccessHandler(function(res) {
         printReceipt(res);
         cart = [];
         renderCart();
         document.getElementById('clientName').value = '';
         document.getElementById('clientPhone').value = '';
-        document.querySelector('#pos .btn-primary').innerText = 'Book Order';
-        document.querySelector('#pos .btn-primary').disabled = false;
-        showToast(`Order ${res.id} booked. Set Confirmed/Completed from Orders tab.`, 'success');
+        document.getElementById('saveOrderBtn').innerText = 'Save Order';
+        document.getElementById('saveOrderBtn').disabled = false;
+        showToast(`Order ${res.id} saved successfully.`, 'success');
+        editingOrderId = '';
         pendingOrder = null;
       }).saveOrder(pendingOrder);
     }
@@ -497,20 +502,22 @@
     // --- ORDERS LOG ---
     function loadOrders() {
       google.script.run.withSuccessHandler(function(orders) {
+        currentOrders = orders;
         const tbody = document.getElementById('ordersTableBody');
         tbody.innerHTML = '';
         orders.forEach(o => {
-          const isCompleted = o.status === 'Completed';
+          const isClosed = o.status === 'Closed' || o.status === 'Completed';
+          const isCancelled = o.status === 'Cancelled';
           tbody.innerHTML += `<tr>
             <td>${o.id}</td><td>${o.date}</td><td>${o.customerName || 'Walk-in'}</td><td>${o.customerPhone || '-'}</td><td>${o.table || 'Takeaway'}</td><td>₹${o.total}</td><td>${o.mode || 'Pending'}</td>
             <td><span class="status-badge status-${o.status}">${o.status}</span></td>
             <td>
-              <select onchange="updateStatus('${o.id}', this.value)" style="width:auto; padding:4px;" ${isCompleted ? 'disabled' : ''}>
-                <option value="">Action...</option>
-                <option value="Confirmed" ${o.status === 'Confirmed' ? 'selected' : ''}>Confirm</option>
-                <option value="Completed">Complete + Payment</option>
-                <option value="Cancelled" ${o.status === 'Cancelled' ? 'selected' : ''}>Cancel</option>
-              </select>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button class="btn-secondary" onclick="editOrder('${o.id}')" ${isClosed || isCancelled ? 'disabled' : ''}>Edit</button>
+                <button class="btn-secondary" onclick="closeOrder('${o.id}')" ${isClosed || isCancelled ? 'disabled' : ''}>Mark Close</button>
+                <button class="btn-secondary" onclick="openPaymentModal('${o.id}')" ${isCancelled ? 'disabled' : ''}>Record Payment</button>
+                <button class="btn-secondary" onclick="cancelOrder('${o.id}')" ${isClosed || isCancelled ? 'disabled' : ''}>Cancel</button>
+              </div>
             </td>
           </tr>`;
         });
@@ -518,13 +525,6 @@
     }
 
     function updateStatus(id, status) {
-      if(!status) return;
-      if (status === 'Completed') {
-        pendingPaymentOrder = id;
-        document.getElementById('paymentText').innerText = `Order ${id} is delivered. Record payment to complete it.`;
-        document.getElementById('paymentModal').classList.add('show');
-        return;
-      }
       google.script.run
         .withSuccessHandler(() => {
           showToast(`Order ${id} marked ${status}.`, 'success');
@@ -534,6 +534,34 @@
         .updateOrderStatus(id, status);
     }
 
+    function editOrder(orderId) {
+      const order = currentOrders.find(o => o.id === orderId);
+      if (!order) return showToast(`Order ${orderId} not found.`, 'info');
+      editingOrderId = order.id;
+      cart = (order.items || []).map(item => ({ ...item }));
+      renderCart();
+      document.getElementById('clientName').value = order.customerName || '';
+      document.getElementById('clientPhone').value = order.customerPhone === '-' ? '' : (order.customerPhone || '');
+      document.getElementById('posTableSelect').value = order.table || 'Takeaway';
+      document.getElementById('saveOrderBtn').innerText = 'Save Changes';
+      nav('pos');
+      showToast(`Editing order ${orderId}. Update items and save.`, 'info');
+    }
+
+    function closeOrder(orderId) {
+      updateStatus(orderId, 'Closed');
+    }
+
+    function cancelOrder(orderId) {
+      updateStatus(orderId, 'Cancelled');
+    }
+
+    function openPaymentModal(orderId) {
+      pendingPaymentOrder = orderId;
+      document.getElementById('paymentText').innerText = `Record payment for order ${orderId}.`;
+      document.getElementById('paymentModal').classList.add('show');
+    }
+
     function closePaymentModal() {
       pendingPaymentOrder = null;
       document.getElementById('paymentModal').classList.remove('show');
@@ -544,27 +572,12 @@
       const payMode = document.getElementById('completePaymentMode').value;
       google.script.run
         .withSuccessHandler(() => {
-          showToast(`Order ${pendingPaymentOrder} completed and payment (${payMode}) recorded.`, 'success');
+          showToast(`Payment (${payMode}) recorded for order ${pendingPaymentOrder}.`, 'success');
           closePaymentModal();
           loadOrders();
         })
         .withFailureHandler((err) => showToast(`Payment save failed: ${err.message || err}`, 'info'))
-        .completeOrderAndRecordPayment(pendingPaymentOrder, payMode);
-    }
-
-    function closePaymentModal() {
-      pendingPaymentOrder = null;
-      document.getElementById('paymentModal').classList.remove('show');
-    }
-
-    function saveCompletedPayment() {
-      if (!pendingPaymentOrder) return;
-      const payMode = document.getElementById('completePaymentMode').value;
-      google.script.run.withSuccessHandler(() => {
-        showToast(`Order ${pendingPaymentOrder} completed and payment (${payMode}) recorded.`, 'success');
-        closePaymentModal();
-        loadOrders();
-      }).completeOrderAndRecordPayment(pendingPaymentOrder, payMode);
+        .recordOrderPayment(pendingPaymentOrder, payMode);
     }
 
     // --- EXPENSES ---

@@ -582,13 +582,24 @@
 
     // --- EXPENSES ---
     function loadExpenses() {
-      google.script.run.withSuccessHandler(function(exp) {
-        const tbody = document.getElementById('expenseTableBody');
-        tbody.innerHTML = '';
-        exp.forEach(e => {
-          tbody.innerHTML += `<tr><td>${e.date}</td><td>${e.category}</td><td>${e.desc}</td><td>₹${e.amount}</td></tr>`;
-        });
-      }).getExpenses();
+      google.script.run
+        .withSuccessHandler(function(exp) {
+          const tbody = document.getElementById('expenseTableBody');
+          tbody.innerHTML = '';
+          if (!exp || exp.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#666;">No expense records found.</td></tr>';
+            return;
+          }
+          exp.forEach(e => {
+            tbody.innerHTML += `<tr><td>${e.date || '-'}</td><td>${e.category || '-'}</td><td>${e.desc || '-'}</td><td>₹${e.amount || 0}</td></tr>`;
+          });
+        })
+        .withFailureHandler((err) => {
+          showToast(`Unable to load expenses: ${err.message || err}`, 'info');
+          const tbody = document.getElementById('expenseTableBody');
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#cc0c39;">Failed to load expenses.</td></tr>';
+        })
+        .getExpenses();
     }
 
     function saveExpense() {

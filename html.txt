@@ -13,9 +13,10 @@
     body { font-family: Arial, sans-serif; margin: 0; background-color: var(--bg); color: var(--text); }
     
     /* Navbar */
-    .header { background-color: var(--amz-nav); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .header { background-color: var(--amz-nav); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
     .header h1 { margin: 0; font-size: 24px; }
     .header span { color: var(--amz-orange); font-size: 14px; }
+    .mobile-nav-toggle { display: none; background: transparent; border: 1px solid rgba(255,255,255,0.4); color: #fff; border-radius: 6px; padding: 8px 10px; font-size: 16px; cursor: pointer; }
     .nav-bar { background-color: var(--amz-nav-light); padding: 5px 20px; display: flex; gap: 15px; overflow-x: auto; white-space: nowrap; }
     .nav-btn { background: none; border: 1px solid transparent; color: white; cursor: pointer; padding: 8px 12px; font-weight: bold; border-radius: 3px; }
     .nav-btn:hover, .nav-btn.active { border-color: white; }
@@ -57,19 +58,57 @@
     @media (max-width: 768px) { .pos-grid { grid-template-columns: 1fr; } }
     .menu-item-btn { background: white; border: 1px solid #ddd; padding: 15px; border-radius: 4px; cursor: pointer; text-align: center; }
     .menu-item-btn:hover { border-color: var(--amz-orange); box-shadow: 0 0 5px rgba(255,153,0,0.5); }
+
+    .mobile-bottom-nav { display: none; }
+    .toast-wrap { position: fixed; right: 16px; bottom: 16px; z-index: 2500; display: grid; gap: 10px; }
+    .toast { background: #111; color: #fff; padding: 12px 16px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); animation: fadeInUp .25s ease; font-size: 14px; }
+    .toast.success { background: #067d62; }
+    .toast.info { background: #232f3e; }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(15, 17, 17, 0.45); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
+    .modal-overlay.show { display: flex; }
+    .modal { background: #fff; border-radius: 12px; width: min(480px, 100%); padding: 18px; box-shadow: 0 12px 35px rgba(0,0,0,0.18); border-top: 5px solid var(--amz-orange); }
+    .modal h4 { margin: 0 0 10px; font-size: 20px; }
+    .modal p { margin: 0 0 8px; color: #2c3b4d; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
+    .btn-ghost { border: 1px solid #d5d9d9; background: #fff; border-radius: 8px; padding: 9px 16px; cursor: pointer; }
+
+    @media (max-width: 768px) {
+      .header { padding: 10px 14px; }
+      .header h1 { font-size: 19px; }
+      .header span { display: block; margin-left: 0 !important; font-size: 12px; }
+      .mobile-nav-toggle { display: inline-flex; }
+      .nav-bar { display: none; position: sticky; top: 0; z-index: 1100; padding: 8px 12px; gap: 8px; flex-wrap: wrap; box-shadow: 0 6px 18px rgba(0,0,0,0.2); }
+      .nav-bar.open { display: flex; }
+      .nav-btn { flex: 1 1 calc(50% - 8px); text-align: center; border: 1px solid rgba(255,255,255,0.2); }
+      .container { padding: 0 12px 78px; margin: 12px auto; }
+      .card { padding: 14px; border-radius: 10px; }
+      table { font-size: 13px; min-width: 640px; }
+      th, td { padding: 10px; }
+      .mobile-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--amz-nav); display: grid; grid-template-columns: repeat(5, 1fr); z-index: 1200; border-top: 1px solid #2f3c4c; }
+      .mobile-bottom-nav .nav-btn { border-radius: 0; font-size: 11px; padding: 10px 4px; border: none; white-space: normal; line-height: 1.2; }
+      .toast-wrap { left: 12px; right: 12px; bottom: 72px; }
+      .toast { font-size: 13px; }
+      .modal { padding: 14px; border-radius: 10px; }
+    }
   </style>
 </head>
 <body>
 
   <div class="header">
     <h1>Octane Pizza <span style="margin-left:10px;">Gotri, Vadodara</span></h1>
+    <button class="mobile-nav-toggle" onclick="toggleMobileMenu()">☰ Menu</button>
   </div>
-  <div class="nav-bar">
-    <button class="nav-btn active" onclick="nav('pos')">Point of Sale</button>
-    <button class="nav-btn" onclick="nav('orders'); loadOrders();">Orders</button>
-    <button class="nav-btn" onclick="nav('tables'); loadTableSetup();">Tables</button>
-    <button class="nav-btn" onclick="nav('menu'); loadMenuSetup();">Menu</button>
-    <button class="nav-btn" onclick="nav('expenses'); loadExpenses();">Expenses</button>
+  <div class="nav-bar" id="topNav">
+    <button class="nav-btn active" onclick="nav('pos', this)">Point of Sale</button>
+    <button class="nav-btn" onclick="nav('orders', this); loadOrders();">Orders</button>
+    <button class="nav-btn" onclick="nav('tables', this); loadTableSetup();">Tables</button>
+    <button class="nav-btn" onclick="nav('menu', this); loadMenuSetup();">Menu</button>
+    <button class="nav-btn" onclick="nav('expenses', this); loadExpenses();">Expenses</button>
   </div>
 
   <div class="container">
@@ -169,6 +208,27 @@
 
   </div>
 
+  <div class="mobile-bottom-nav">
+    <button class="nav-btn active" onclick="nav('pos', this)">POS</button>
+    <button class="nav-btn" onclick="nav('orders', this); loadOrders();">Orders</button>
+    <button class="nav-btn" onclick="nav('tables', this); loadTableSetup();">Tables</button>
+    <button class="nav-btn" onclick="nav('menu', this); loadMenuSetup();">Menu</button>
+    <button class="nav-btn" onclick="nav('expenses', this); loadExpenses();">Expenses</button>
+  </div>
+
+  <div id="confirmModal" class="modal-overlay">
+    <div class="modal">
+      <h4>Confirm Booking</h4>
+      <p id="confirmText"></p>
+      <p id="confirmText2"></p>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="closeConfirmModal()">Cancel</button>
+        <button class="btn-primary" style="width:auto;" onclick="confirmAndSaveOrder()">Confirm & Pay</button>
+      </div>
+    </div>
+  </div>
+  <div id="toastWrap" class="toast-wrap"></div>
+
   <div id="printSection">
     <div class="receipt-header">
       <h2 style="margin:0;">OCTANE PIZZA</h2>
@@ -189,13 +249,42 @@
   <script>
     let globalMenu = [];
     let cart = [];
+    let pendingOrder = null;
 
     // Navigation
-    function nav(pageId) {
+    function nav(pageId, btnEl) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(pageId).classList.add('active');
-      event.target.classList.add('active');
+      const labels = {
+        pos: ['Point of Sale', 'POS'],
+        orders: ['Orders'],
+        tables: ['Tables'],
+        menu: ['Menu'],
+        expenses: ['Expenses']
+      };
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        if ((labels[pageId] || []).includes(btn.textContent.trim())) btn.classList.add('active');
+      });
+      if (btnEl) btnEl.classList.add('active');
+      document.getElementById('topNav').classList.remove('open');
+    }
+
+    function toggleMobileMenu() {
+      document.getElementById('topNav').classList.toggle('open');
+    }
+
+    function showToast(message, type = 'info') {
+      const wrap = document.getElementById('toastWrap');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerText = message;
+      wrap.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(8px)';
+      }, 2300);
+      setTimeout(() => toast.remove(), 2700);
     }
 
     // Startup
@@ -240,22 +329,37 @@
     }
 
     function processOrder() {
-      if (cart.length === 0) return alert('Cart is empty!');
-      const order = {
+      if (cart.length === 0) return showToast('Cart is empty. Add items before booking.', 'info');
+      pendingOrder = {
         items: cart,
         table: document.getElementById('posTableSelect').value,
         total: document.getElementById('cartTotal').innerText,
         mode: document.getElementById('paymentMode').value
       };
-      
+      document.getElementById('confirmText').innerText = `Table: ${pendingOrder.table}`;
+      document.getElementById('confirmText2').innerText = `Payment: ${pendingOrder.mode} • Total: ₹${pendingOrder.total}`;
+      document.getElementById('confirmModal').classList.add('show');
+    }
+
+    function closeConfirmModal() {
+      pendingOrder = null;
+      document.getElementById('confirmModal').classList.remove('show');
+    }
+
+    function confirmAndSaveOrder() {
+      if (!pendingOrder) return;
+      document.getElementById('confirmModal').classList.remove('show');
       document.querySelector('#pos .btn-primary').innerText = 'Booking...';
+      document.querySelector('#pos .btn-primary').disabled = true;
       google.script.run.withSuccessHandler(function(res) {
         printReceipt(res);
         cart = [];
         renderCart();
         document.querySelector('#pos .btn-primary').innerText = 'Book Order';
-        alert('Order Booked Successfully!');
-      }).saveOrder(order);
+        document.querySelector('#pos .btn-primary').disabled = false;
+        showToast(`Order ${res.id} booked successfully. Payment received via ${res.mode}.`, 'success');
+        pendingOrder = null;
+      }).saveOrder(pendingOrder);
     }
 
     function printReceipt(orderData) {

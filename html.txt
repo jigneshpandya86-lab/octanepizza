@@ -4,20 +4,22 @@
   <base target="_top">
   <style>
     :root {
-      --amz-nav: #131921;
-      --amz-nav-light: #232f3e;
-      --amz-orange: #f90;
-      --bg: #eaeded;
-      --text: #0f1111;
+      --amz-nav: #1d153a;
+      --amz-nav-light: #2b1f54;
+      --amz-orange: #ff9f1c;
+      --bg: linear-gradient(180deg, #f1f3ff 0%, #ffeef8 100%);
+      --text: #1c1533;
+      --card-shadow: 0 14px 35px rgba(58, 33, 98, 0.14);
+      --card-radius: 18px;
     }
-    body { font-family: Arial, sans-serif; margin: 0; background-color: var(--bg); color: var(--text); }
+    body { font-family: Arial, sans-serif; margin: 0; background: var(--bg); color: var(--text); min-height: 100vh; }
     
     /* Navbar */
-    .header { background-color: var(--amz-nav); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .header { background: linear-gradient(135deg, #1d153a, #472f8d); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(39, 25, 76, 0.35); }
     .header h1 { margin: 0; font-size: 24px; }
     .header span { color: var(--amz-orange); font-size: 14px; }
     .mobile-nav-toggle { display: none; background: transparent; border: 1px solid rgba(255,255,255,0.4); color: #fff; border-radius: 6px; padding: 8px 10px; font-size: 16px; cursor: pointer; }
-    .nav-bar { background-color: var(--amz-nav-light); padding: 5px 20px; display: flex; gap: 15px; overflow-x: auto; white-space: nowrap; }
+    .nav-bar { background: linear-gradient(90deg, #2b1f54 0%, #3a2a6a 100%); padding: 5px 20px; display: flex; gap: 15px; overflow-x: auto; white-space: nowrap; }
     .nav-btn { background: none; border: 1px solid transparent; color: white; cursor: pointer; padding: 8px 12px; font-weight: bold; border-radius: 3px; }
     .nav-btn:hover, .nav-btn.active { border-color: white; }
 
@@ -25,19 +27,20 @@
     .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
     .page { display: none; }
     .page.active { display: block; }
-    .card { background: white; padding: 20px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .card { background: rgba(255,255,255,0.96); padding: 18px; border-radius: var(--card-radius); box-shadow: var(--card-shadow); margin-bottom: 18px; border: 1px solid rgba(96, 74, 163, 0.12); }
     
     /* Forms & Buttons */
     input, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #a6a6a6; border-radius: 3px; box-sizing: border-box; }
     input:focus, select:focus { border-color: var(--amz-orange); outline: none; box-shadow: 0 0 0 2px rgba(255,153,0,0.5); }
-    .btn-primary { background-color: #ffd814; border: 1px solid #fcd200; border-radius: 8px; padding: 10px 20px; cursor: pointer; width: 100%; font-weight: bold; box-shadow: 0 2px 5px rgba(213,217,217,.5); }
-    .btn-primary:hover { background-color: #f7ca00; border-color: #f2c200; }
-    .btn-secondary { background-color: #e3e6e6; border: 1px solid #d5d9d9; border-radius: 8px; padding: 8px 15px; cursor: pointer; }
+    .btn-primary { background: linear-gradient(135deg, #ffcf3f, #ff9f1c); border: 1px solid #efad24; border-radius: 999px; padding: 10px 20px; cursor: pointer; width: 100%; font-weight: bold; box-shadow: 0 6px 14px rgba(255, 162, 28, .3); color: #3b2300; }
+    .btn-primary:hover { filter: brightness(0.97); }
+    .btn-secondary { background-color: #f2f0ff; border: 1px solid #d8d2f7; border-radius: 999px; padding: 8px 15px; cursor: pointer; color: #2f2454; }
+    .icon-btn { width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; padding: 0; font-size: 17px; }
     
     /* Tables */
     table { width: 100%; border-collapse: collapse; margin-top: 15px; }
     th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
-    th { background-color: #f3f3f3; }
+    th { background-color: #f1ecff; color: #34235d; }
     .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; }
     .status-Active, .status-Delivered, .status-Confirmed, .status-Completed, .status-Closed { background: #067d62; }
     .status-Inactive, .status-Cancelled { background: #cc0c39; }
@@ -56,8 +59,9 @@
     
     .pos-grid { gap: 14px; }
     .page.active.pos-grid { display: grid; grid-template-columns: 1fr; }
-    .menu-item-btn { background: white; border: 1px solid #ddd; padding: 10px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 13px; }
-    .menu-item-btn:hover { border-color: var(--amz-orange); box-shadow: 0 0 5px rgba(255,153,0,0.5); }
+    .menu-item-btn { background: linear-gradient(150deg, #ffffff, #f4f2ff); border: 1px solid #ddd; padding: 10px; border-radius: 12px; cursor: pointer; text-align: center; font-size: 13px; box-shadow: 0 6px 14px rgba(62, 42, 113, 0.1); }
+    .menu-item-btn:hover { border-color: #a98cff; box-shadow: 0 6px 16px rgba(98, 66, 176, 0.26); }
+    .actions-group { display:flex; gap:6px; flex-wrap:wrap; }
     .compact-order label { font-size: 11px !important; }
     .compact-order input, .compact-order select { margin: 4px 0 8px; padding: 8px; font-size: 13px; }
     .compact-order h2 { font-size: 22px; margin: 8px 0; }
@@ -90,8 +94,15 @@
       .nav-btn { flex: 1 1 calc(50% - 8px); text-align: center; border: 1px solid rgba(255,255,255,0.2); }
       .container { padding: 0 12px 78px; margin: 12px auto; }
       .card { padding: 14px; border-radius: 10px; }
-      table { font-size: 13px; min-width: 640px; }
+      table { font-size: 13px; min-width: 100%; }
       th, td { padding: 10px; }
+      #orders table, #orders thead, #orders tbody, #orders tr, #orders td { display: block; width: 100%; }
+      #orders thead { display: none; }
+      #orders tr { border: 1px solid #ddd2ff; margin-bottom: 10px; border-radius: 14px; padding: 8px; background: #fff; box-shadow: 0 8px 18px rgba(47, 34, 80, 0.08); }
+      #orders td { border-bottom: 1px dashed #ece7ff; padding: 8px 10px; }
+      #orders td:last-child { border-bottom: none; }
+      #orders td::before { content: attr(data-label); display: block; font-size: 11px; font-weight: 700; color: #6b6198; margin-bottom: 3px; }
+      .actions-group { justify-content: flex-start; }
       #posMenuList { grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)) !important; gap: 8px !important; }
       .mobile-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--amz-nav); display: grid; grid-template-columns: repeat(5, 1fr); z-index: 1200; border-top: 1px solid #2f3c4c; }
       .mobile-bottom-nav .nav-btn { border-radius: 0; font-size: 11px; padding: 10px 4px; border: none; white-space: normal; line-height: 1.2; }
@@ -249,6 +260,24 @@
       </div>
     </div>
   </div>
+  <div id="billModal" class="modal-overlay">
+    <div class="modal">
+      <h4>Generate Bill</h4>
+      <p id="billText"></p>
+      <label style="font-size: 12px; font-weight: bold;">Discount (%):</label>
+      <input id="billDiscountPercent" type="number" min="0" max="100" step="0.5" value="0" placeholder="Enter discount %">
+      <label style="font-size: 12px; font-weight: bold;">Payment Mode:</label>
+      <select id="billPaymentMode">
+        <option value="Cash">Cash</option>
+        <option value="UPI">UPI</option>
+        <option value="Card">Card</option>
+      </select>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="closeBillModal()">Cancel</button>
+        <button class="btn-primary" style="width:auto;" onclick="generateOrderBill()">Print Bill</button>
+      </div>
+    </div>
+  </div>
   <div id="toastWrap" class="toast-wrap"></div>
 
   <div id="printSection">
@@ -264,6 +293,8 @@
     </p>
     <div id="printItems" style="border-top:1px dashed black; padding-top:5px; font-size: 14px;"></div>
     <div class="receipt-total">
+      Subtotal: ₹<span id="printSubtotal"></span><br>
+      <span id="printDiscountRow" style="display:none; font-size:12px; font-weight:normal;">Discount (<span id="printDiscountPercent"></span>%): -₹<span id="printDiscountAmount"></span></span><br>
       Total: ₹<span id="printTotal"></span><br>
       <span style="font-size:12px; font-weight:normal;">Mode: <span id="printMode"></span></span>
     </div>
@@ -275,6 +306,7 @@
     let pendingOrder = null;
     let editingOrderId = '';
     let pendingPaymentOrder = null;
+    let pendingBillOrderId = null;
     let currentOrders = [];
 
     // Navigation
@@ -400,13 +432,26 @@
     }
 
     function printReceipt(orderData) {
+      const subtotal = Number(orderData.subtotal ?? orderData.total ?? 0);
+      const discountPercent = Number(orderData.discountPercent || 0);
+      const discountAmount = Number(orderData.discountAmount || 0);
+      const finalTotal = Number(orderData.total || 0);
       document.getElementById('printId').innerText = orderData.id;
       document.getElementById('printDate').innerText = orderData.date;
       document.getElementById('printTable').innerText = orderData.table;
-      document.getElementById('printTotal').innerText = orderData.total;
+      document.getElementById('printSubtotal').innerText = subtotal.toFixed(2);
+      document.getElementById('printTotal').innerText = finalTotal.toFixed(2);
       document.getElementById('printMode').innerText = orderData.mode;
       document.getElementById('printClient').innerText = orderData.customerName || 'Walk-in';
       document.getElementById('printPhone').innerText = orderData.customerPhone || '';
+      const discountRow = document.getElementById('printDiscountRow');
+      if (discountPercent > 0 && discountAmount > 0) {
+        discountRow.style.display = 'inline';
+        document.getElementById('printDiscountPercent').innerText = discountPercent.toFixed(1).replace('.0', '');
+        document.getElementById('printDiscountAmount').innerText = discountAmount.toFixed(2);
+      } else {
+        discountRow.style.display = 'none';
+      }
       
       let itemsHtml = '';
       orderData.items.forEach(i => {
@@ -530,14 +575,15 @@
           const isClosed = o.status === 'Closed' || o.status === 'Completed';
           const isCancelled = o.status === 'Cancelled';
           tbody.innerHTML += `<tr>
-            <td>${o.id}</td><td>${o.date}</td><td>${o.customerName || 'Walk-in'}</td><td>${o.customerPhone || '-'}</td><td>${o.table || 'Takeaway'}</td><td>₹${o.total}</td><td>${o.mode || 'Pending'}</td>
-            <td><span class="status-badge status-${o.status}">${o.status}</span></td>
-            <td>
-              <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                <button class="btn-secondary" onclick="editOrder('${o.id}')" ${isClosed || isCancelled ? 'disabled' : ''}>Edit</button>
-                <button class="btn-secondary" onclick="closeOrder('${o.id}')" ${isClosed || isCancelled ? 'disabled' : ''}>Mark Close</button>
-                <button class="btn-secondary" onclick="openPaymentModal('${o.id}')" ${isCancelled ? 'disabled' : ''}>Record Payment</button>
-                <button class="btn-secondary" onclick="cancelOrder('${o.id}')" ${isClosed || isCancelled ? 'disabled' : ''}>Cancel</button>
+            <td data-label="ID">${o.id}</td><td data-label="Date">${o.date}</td><td data-label="Client">${o.customerName || 'Walk-in'}</td><td data-label="Phone">${o.customerPhone || '-'}</td><td data-label="Table">${o.table || 'Takeaway'}</td><td data-label="Total">₹${o.total}</td><td data-label="Payment">${o.mode || 'Pending'}</td>
+            <td data-label="Status"><span class="status-badge status-${o.status}">${o.status}</span></td>
+            <td data-label="Actions">
+              <div class="actions-group">
+                <button title="Edit Order" class="btn-secondary icon-btn" onclick="editOrder('${o.id}')" ${isClosed || isCancelled ? 'disabled' : ''}>✏️</button>
+                <button title="Mark Closed" class="btn-secondary icon-btn" onclick="closeOrder('${o.id}')" ${isClosed || isCancelled ? 'disabled' : ''}>✅</button>
+                <button title="Record Payment" class="btn-secondary icon-btn" onclick="openPaymentModal('${o.id}')" ${isCancelled ? 'disabled' : ''}>💳</button>
+                <button title="Generate Bill" class="btn-secondary icon-btn" onclick="openBillModal('${o.id}')" ${isCancelled ? 'disabled' : ''}>🧾</button>
+                <button title="Cancel Order" class="btn-secondary icon-btn" onclick="cancelOrder('${o.id}')" ${isClosed || isCancelled ? 'disabled' : ''}>❌</button>
               </div>
             </td>
           </tr>`;
@@ -605,6 +651,46 @@
     function closePaymentModal() {
       pendingPaymentOrder = null;
       document.getElementById('paymentModal').classList.remove('show');
+    }
+
+    function openBillModal(orderId) {
+      pendingBillOrderId = orderId;
+      document.getElementById('billDiscountPercent').value = 0;
+      document.getElementById('billPaymentMode').value = 'Cash';
+      document.getElementById('billText').innerText = `Generate printable restaurant bill for order ${orderId}.`;
+      document.getElementById('billModal').classList.add('show');
+    }
+
+    function closeBillModal() {
+      pendingBillOrderId = null;
+      document.getElementById('billModal').classList.remove('show');
+    }
+
+    function generateOrderBill() {
+      if (!pendingBillOrderId) return;
+      const order = currentOrders.find(o => o.id === pendingBillOrderId);
+      if (!order) {
+        closeBillModal();
+        return showToast('Order not found for billing.', 'info');
+      }
+      const discountPercent = Number(document.getElementById('billDiscountPercent').value || 0);
+      if (discountPercent < 0 || discountPercent > 100) {
+        return showToast('Discount must be between 0 and 100%.', 'info');
+      }
+      const subtotal = Number(order.total || 0);
+      const discountAmount = subtotal * (discountPercent / 100);
+      const finalTotal = Math.max(0, subtotal - discountAmount);
+      const printPayload = {
+        ...order,
+        subtotal: subtotal,
+        discountPercent: discountPercent,
+        discountAmount: discountAmount,
+        total: finalTotal,
+        mode: document.getElementById('billPaymentMode').value
+      };
+      printReceipt(printPayload);
+      closeBillModal();
+      showToast(`Bill generated for ${order.id}.`, 'success');
     }
 
     function saveCompletedPayment() {

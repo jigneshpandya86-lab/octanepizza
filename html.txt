@@ -51,9 +51,14 @@
     .menu-item-btn { background: linear-gradient(150deg, #ffffff, #f4f2ff); border: 1px solid #ddd; padding: 10px; border-radius: 12px; cursor: pointer; text-align: center; font-size: 13px; box-shadow: 0 6px 14px rgba(62, 42, 113, 0.1); }
     .menu-item-btn:hover { border-color: #a98cff; box-shadow: 0 6px 16px rgba(98, 66, 176, 0.26); }
     .actions-group { display:flex; gap:6px; flex-wrap:wrap; }
-    .compact-order label { font-size: 11px !important; }
-    .compact-order input, .compact-order select { margin: 4px 0 8px; padding: 8px; font-size: 13px; }
-    .compact-order h2 { font-size: 22px; margin: 8px 0; }
+    .compact-order { padding-top: 12px; }
+    .compact-order-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+    .compact-order-title { margin: 0; font-size: 32px; line-height: 1; }
+    .compact-order h2 { font-size: 30px; margin: 0; line-height: 1; }
+    .customer-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+    .compact-order input, .compact-order select { margin: 2px 0 6px; padding: 7px 8px; font-size: 13px; }
+    .compact-order-note { font-size: 12px; margin: 4px 0 8px; color:#4f5f73; }
+    #cartItems { list-style: none; padding: 0; margin: 4px 0; }
 
     .mobile-bottom-nav { display: none; }
     .toast-wrap { position: fixed; right: 16px; bottom: 16px; z-index: 2500; display: grid; gap: 10px; }
@@ -93,6 +98,10 @@
       #orders td::before { content: attr(data-label); display: block; font-size: 11px; font-weight: 700; color: #6b6198; margin-bottom: 3px; }
       .actions-group { justify-content: flex-start; }
       #posMenuList { grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)) !important; gap: 8px !important; }
+      .customer-row { grid-template-columns: 1fr; gap: 4px; }
+      .compact-order-header { flex-direction: column; align-items: flex-start; gap: 4px; }
+      .compact-order h2 { font-size: 25px; }
+      .compact-order-title { font-size: 26px; }
       .mobile-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--amz-nav); display: grid; grid-template-columns: repeat(5, 1fr); z-index: 1200; border-top: 1px solid #2f3c4c; }
       .mobile-bottom-nav .nav-btn { border-radius: 0; font-size: 11px; padding: 10px 4px; border: none; white-space: normal; line-height: 1.2; }
       .toast-wrap { left: 12px; right: 12px; bottom: 72px; }
@@ -119,20 +128,20 @@
     
     <div id="pos" class="page active pos-grid">
       <div class="card compact-order">
-        <h3>Current Order</h3>
-        <label style="font-weight: bold;">Client Name:</label>
-        <input id="clientName" placeholder="Walk-in / Customer name">
-        <label style="font-weight: bold;">Client Number:</label>
-        <input id="clientPhone" placeholder="10-digit mobile number" inputmode="numeric">
-        <ul id="cartItems" style="list-style: none; padding: 0;"></ul>
-        <h2 style="text-align: right;">Total: ₹<span id="cartTotal">0</span></h2>
-        
-        <label style="font-size: 12px; font-weight: bold;">Select Table:</label>
+        <div class="compact-order-header">
+          <h3 class="compact-order-title">Current Order</h3>
+          <h2>Total: ₹<span id="cartTotal">0</span></h2>
+        </div>
+        <div class="customer-row">
+          <input id="clientName" placeholder="Walk-in / Customer name">
+          <input id="clientPhone" placeholder="Client mobile number (optional)" inputmode="numeric">
+        </div>
+        <ul id="cartItems"></ul>
         <select id="posTableSelect">
           <option value="Takeaway">Takeaway / No Table</option>
         </select>
         
-        <p style="font-size:12px; margin-top:6px; color:#4f5f73;">Save new orders here. Use Orders tab to edit, close, record payment, or cancel.</p>
+        <p class="compact-order-note">Save new orders here. Use Orders tab to edit, close, record payment, or cancel.</p>
         <button id="saveOrderBtn" class="btn-primary" onclick="processOrder()">Save Order</button>
       </div>
       <div class="card">

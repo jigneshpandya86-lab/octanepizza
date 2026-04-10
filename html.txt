@@ -468,8 +468,8 @@
 
       #orders table {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 12px 10px;
+        grid-template-columns: 1fr;
+        gap: 10px;
         width: 100%;
       }
       #orders thead { display: none; }
@@ -479,17 +479,19 @@
       #orders tr {
         border: 2px solid #e0e0e0;
         border-radius: 10px;
-        padding: 12px;
+        padding: 10px;
         background: white;
         box-shadow: 0 4px 12px rgba(26, 26, 46, 0.06);
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 12px;
+        max-height: calc(100vh / 3.5);
+        overflow: hidden;
       }
       #orders tr:hover { background: #f8f9fa; }
       #orders td {
         border-bottom: none;
-        padding: 3px 0;
+        padding: 2px 0;
         font-size: 11px;
         display: flex;
         flex-direction: column;
@@ -507,15 +509,17 @@
 
       .actions-group {
         justify-content: flex-start;
-        flex-direction: column;
-        gap: 4px;
-        margin-top: 8px;
+        flex-direction: row;
+        gap: 6px;
+        margin-top: 6px;
+        grid-column: 1 / -1;
       }
       .actions-group button {
-        font-size: 11px;
-        padding: 6px 10px;
+        font-size: 10px;
+        padding: 5px 8px;
         min-height: auto;
         height: auto;
+        flex: 1;
       }
       #posMenuList {
         grid-template-columns: repeat(3, 1fr) !important;
@@ -589,11 +593,12 @@
       .card { padding: 16px; }
       #posMenuList { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
       .menu-item-btn { min-height: 65px; font-size: 10px; padding: 6px; }
-      #orders table { grid-template-columns: repeat(2, 1fr); gap: 10px 8px; }
-      #orders tr { padding: 10px; }
+      #orders table { grid-template-columns: 1fr; gap: 8px; }
+      #orders tr { padding: 8px; grid-template-columns: 1fr 1fr; max-height: calc(100vh / 3.5); }
       #orders td { font-size: 10px; }
       #orders td::before { font-size: 7px; }
-      .actions-group button { font-size: 10px; padding: 5px 8px; }
+      .actions-group { gap: 4px; }
+      .actions-group button { font-size: 9px; padding: 4px 6px; }
       .compact-order-title { font-size: 22px; }
       .compact-order h2 { font-size: 20px; }
       .compact-order-header { gap: 10px; }
@@ -1063,30 +1068,74 @@
       const discountPercent = Number(orderData.discountPercent || 0);
       const discountAmount = Number(orderData.discountAmount || 0);
       const finalTotal = Number(orderData.total || 0);
+
       document.getElementById('printId').innerText = orderData.id;
       document.getElementById('printDate').innerText = orderData.date;
       document.getElementById('printTable').innerText = orderData.table;
+      document.getElementById('printClient').innerText = orderData.customerName || 'Walk-in';
       document.getElementById('printSubtotal').innerText = subtotal.toFixed(2);
       document.getElementById('printTotal').innerText = finalTotal.toFixed(2);
       document.getElementById('printMode').innerText = orderData.mode;
-      document.getElementById('printClient').innerText = orderData.customerName || 'Walk-in';
-      document.getElementById('printPhone').innerText = orderData.customerPhone || '';
+
+      // Generate items table rows
+      let itemsHtml = '';
+      if (orderData.items && Array.isArray(orderData.items)) {
+        orderData.items.forEach(i => {
+          const itemTotal = (Number(i.price) * Number(i.qty)).toFixed(2);
+          itemsHtml += `<tr>
+            <td>${i.name}</td>
+            <td class="text-right">₹${Number(i.price).toFixed(2)}</td>
+            <td class="text-right">${i.qty}</td>
+            <td class="text-right">₹${itemTotal}</td>
+          </tr>`;
+        });
+      }
+      document.getElementById('printItems').innerHTML = itemsHtml;
+
+      // Handle discount row
       const discountRow = document.getElementById('printDiscountRow');
       if (discountPercent > 0 && discountAmount > 0) {
-        discountRow.style.display = 'inline';
+        discountRow.style.display = 'flex';
         document.getElementById('printDiscountPercent').innerText = discountPercent.toFixed(1).replace('.0', '');
         document.getElementById('printDiscountAmount').innerText = discountAmount.toFixed(2);
       } else {
         discountRow.style.display = 'none';
       }
-      
-      let itemsHtml = '';
-      orderData.items.forEach(i => {
-        itemsHtml += `<div class="receipt-item"><span>${i.qty}x ${i.name}</span><span>${i.price * i.qty}</span></div>`;
-      });
-      document.getElementById('printItems').innerHTML = itemsHtml;
-      
-      window.print();
+
+      // Handle tax rows if applicable
+      const cgstPercent = 2.5;
+      const sgstPercent = 2.5;
+      const cgstAmount = subtotal * (cgstPercent / 100);
+      const sgstAmount = subtotal * (sgstPercent / 100);
+
+      const cgstRow = document.getElementById('printCGSTRow');
+      const sgstRow = document.getElementById('printSGSTRow');
+
+      if (cgstAmount > 0) {
+        cgstRow.style.display = 'flex';
+        document.getElementById('printCGSTPercent').innerText = cgstPercent;
+        document.getElementById('printCGSTAmount').innerText = cgstAmount.toFixed(2);
+      } else {
+        cgstRow.style.display = 'none';
+      }
+
+      if (sgstAmount > 0) {
+        sgstRow.style.display = 'flex';
+        document.getElementById('printSGSTPercent').innerText = sgstPercent;
+        document.getElementById('printSGSTAmount').innerText = sgstAmount.toFixed(2);
+      } else {
+        sgstRow.style.display = 'none';
+      }
+
+      // Set time
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString();
+      const printTimeEl = document.getElementById('printTime');
+      if (printTimeEl) {
+        printTimeEl.innerText = `Time: ${timeStr}`;
+      }
+
+      setTimeout(() => window.print(), 100);
     }
 
     // --- TABLE SETUP LOGIC ---

@@ -289,9 +289,9 @@
 
     .actions-group { display:flex; gap: 8px; flex-wrap:wrap; }
     .compact-order { padding-top: 12px; }
-    .compact-order-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
-    .compact-order-title { margin: 0; font-size: 32px; font-weight: 700; line-height: 1; }
-    .compact-order h2 { font-size: 28px; margin: 0; line-height: 1; color: var(--accent); font-weight: 700; }
+    .compact-order-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 12px; flex-wrap: nowrap; }
+    .compact-order-title { margin: 0; font-size: 32px; font-weight: 700; line-height: 1; white-space: nowrap; }
+    .compact-order h2 { font-size: 28px; margin: 0; line-height: 1; color: var(--accent); font-weight: 700; white-space: nowrap; }
     .customer-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
     .compact-order input, .compact-order select { margin: 6px 0 8px; padding: 10px 12px; font-size: 14px; }
     .compact-order-note { font-size: 13px; margin: 8px 0 12px; color: var(--text-light); font-weight: 500; }
@@ -528,7 +528,7 @@
       }
 
       .customer-row { grid-template-columns: 1fr; gap: 8px; }
-      .compact-order-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .compact-order-header { flex-direction: row; align-items: center; gap: 12px; justify-content: space-between; }
       .compact-order h2 { font-size: 24px; }
       .compact-order-title { font-size: 24px; }
       .compact-order input, .compact-order select { margin: 6px 0 8px; padding: 10px 12px; }
@@ -594,7 +594,9 @@
       #orders td { font-size: 10px; }
       #orders td::before { font-size: 7px; }
       .actions-group button { font-size: 10px; padding: 5px 8px; }
-      .compact-order-title, .compact-order h2 { font-size: 22px; }
+      .compact-order-title { font-size: 22px; }
+      .compact-order h2 { font-size: 20px; }
+      .compact-order-header { gap: 10px; }
       .modal { padding: 18px; }
       .modal-actions { gap: 8px; }
       .btn-primary, .btn-secondary, .btn-ghost { padding: 12px 16px; }

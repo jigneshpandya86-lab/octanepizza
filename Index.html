@@ -16,6 +16,8 @@
       --text-light: #aaaaaa;
       --text-muted: #666666;
       --card-bg: #1e2332;
+      --surface: #252b3d;
+      --surface-2: #303752;
       --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       --card-radius: 20px;
       --transition: all 0.25s ease;
@@ -140,19 +142,24 @@
       color: var(--text);
       letter-spacing: -0.3px;
     }
+    .page-intro {
+      margin: -8px 0 12px;
+      color: var(--text-light);
+      font-size: 13px;
+    }
 
     /* Forms & Buttons */
     input, select {
       width: 100%;
       padding: 12px 14px;
       margin: 10px 0;
-      border: 2px solid #e0e0e0;
+      border: 2px solid #d8deea;
       border-radius: 10px;
       font-size: 15px;
       font-family: inherit;
       transition: var(--transition);
-      background: white;
-      color: var(--text);
+      background: #fff;
+      color: #1c2434;
     }
 
     input::placeholder { color: #999; }
@@ -301,6 +308,50 @@
     .compact-order input, .compact-order select { margin: 6px 0 8px; padding: 10px 12px; font-size: 14px; }
     .compact-order-note { font-size: 13px; margin: 8px 0 12px; color: var(--text-light); font-weight: 500; }
     #cartItems { list-style: none; padding: 0; margin: 8px 0; }
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .kpi-pill {
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: grid;
+      gap: 2px;
+    }
+    .kpi-pill span { color: var(--text-light); font-size: 11px; text-transform: uppercase; letter-spacing: .4px; }
+    .kpi-pill strong { font-size: 18px; }
+    .cart-row {
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+    .cart-meta { display: grid; gap: 2px; }
+    .cart-name { font-weight: 600; font-size: 13px; }
+    .cart-price { color: var(--text-light); font-size: 12px; }
+    .qty-controls { display: inline-flex; align-items: center; gap: 6px; }
+    .qty-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: var(--surface-2);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .qty-value { font-size: 13px; min-width: 20px; text-align: center; font-weight: 700; }
+    .sticky-cta { position: sticky; bottom: 10px; background: linear-gradient(180deg, rgba(30,35,50,.3), rgba(30,35,50,.95)); padding-top: 8px; }
+    .cta-helper { margin: 0 0 8px; font-size: 12px; color: var(--text-light); }
 
     .mobile-bottom-nav { display: none; }
     .toast-wrap { position: fixed; right: 16px; bottom: 16px; z-index: 2500; display: grid; gap: 10px; }
@@ -583,6 +634,7 @@
       .modal { padding: 22px; border-radius: 14px; }
       .modal h4 { font-size: 20px; }
       .btn-primary, .btn-secondary, .btn-ghost { min-height: 42px; font-size: 14px; }
+      .sticky-cta { bottom: calc(82px + env(safe-area-inset-bottom)); }
       #tables > div,
       #menu > div,
       #expenses > div {
@@ -625,6 +677,7 @@
       .compact-order-title { font-size: 22px; }
       .compact-order h2 { font-size: 20px; }
       .compact-order-header { gap: 10px; }
+      .qty-btn { width: 24px; height: 24px; }
       .modal { padding: 18px; }
       .modal-actions { gap: 8px; }
       .btn-primary, .btn-secondary, .btn-ghost { padding: 12px 16px; }
@@ -641,9 +694,10 @@
   <div class="nav-bar" id="topNav">
     <button class="nav-btn active" onclick="nav('pos', this)">Point of Sale</button>
     <button class="nav-btn" onclick="nav('orders', this); loadOrders();">Orders</button>
-    <button class="nav-btn" onclick="nav('tables', this); loadTableSetup();">Tables</button>
+    <button class="nav-btn" onclick="nav('tables', this); loadTableService();">Tables</button>
     <button class="nav-btn" onclick="nav('menu', this); loadMenuSetup();">Menu</button>
     <button class="nav-btn" onclick="nav('expenses', this); loadExpenses();">Expenses</button>
+    <button class="nav-btn" onclick="openTableMaster()">Table Master</button>
   </div>
 
   <div class="container">
@@ -654,6 +708,7 @@
           <h3 class="compact-order-title">Current Order</h3>
           <h2>Total: ₹<span id="cartTotal">0</span></h2>
         </div>
+        <p class="page-intro">Fast-billing layout inspired by top POS flows: fewer taps, quick quantity controls, and always-visible checkout.</p>
         <div class="customer-row">
           <input id="clientName" placeholder="Walk-in / Customer name">
           <input id="clientPhone" placeholder="Client mobile number (optional)" inputmode="numeric">
@@ -664,7 +719,10 @@
         </select>
         
         <p class="compact-order-note">Save new orders here. Use Orders tab to edit, close, record payment, or cancel.</p>
-        <button id="saveOrderBtn" class="btn-primary" onclick="processOrder()">Save Order</button>
+        <div class="sticky-cta">
+          <p class="cta-helper">Mobile-first checkout: save order from anywhere on the screen.</p>
+          <button id="saveOrderBtn" class="btn-primary" onclick="processOrder()">Save Order</button>
+        </div>
       </div>
       <div class="card">
         <h3>Menu</h3>
@@ -674,6 +732,11 @@
 
     <div id="orders" class="page card">
       <h3>Order Management</h3>
+      <div class="kpi-strip">
+        <div class="kpi-pill"><span>Open</span><strong id="kpiOpen">0</strong></div>
+        <div class="kpi-pill"><span>Closed</span><strong id="kpiClosed">0</strong></div>
+        <div class="kpi-pill"><span>Cancelled</span><strong id="kpiCancelled">0</strong></div>
+      </div>
       <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:8px;">
         <input id="orderSearchInput" type="text" placeholder="Search by Order ID / Client / Phone / Table" style="flex:1; min-width:260px; margin:0;" oninput="filterOrdersList()">
         <button class="btn-secondary" onclick="clearOrderSearch()">Clear</button>
@@ -688,21 +751,18 @@
     </div>
 
     <div id="tables" class="page card">
-      <h3>Table Management</h3>
-      <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-        <input type="hidden" id="tableId">
-        <input type="text" id="tableName" placeholder="Table Name (e.g., Table 1)" style="flex:1;">
-        <input type="number" id="tableCapacity" placeholder="Capacity" style="flex:1;">
-        <select id="tableStatus" style="flex:1;">
-          <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
+      <h3>Table Service</h3>
+      <p class="page-intro">Tap a table to start a new order or open the currently serving one for edits.</p>
+      <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: end;">
+        <select id="tableOrderSelect" style="flex:1; min-width: 220px;">
+          <option value="">Select a table</option>
         </select>
-        <button class="btn-primary" style="width: auto;" onclick="saveTableUI()">Save</button>
+        <input type="text" id="tableOrderClientName" placeholder="Customer name (optional)" style="flex:1;">
+        <input type="text" id="tableOrderClientPhone" placeholder="Phone (optional)" style="flex:1;" inputmode="numeric">
+        <button class="btn-primary" style="width: auto;" onclick="openTableOrderForm()">Open Order Form</button>
       </div>
-      <table>
-        <thead><tr><th>Table Name</th><th>Capacity</th><th>Status</th><th>Edit</th></tr></thead>
-        <tbody id="tableTableBody"></tbody>
-      </table>
+      <h3 style="margin-top: 4px;">Currently Serving</h3>
+      <div id="servingTablesList"></div>
     </div>
 
     <div id="menu" class="page card">
@@ -748,9 +808,34 @@
   <div class="mobile-bottom-nav">
     <button class="nav-btn active" onclick="nav('pos', this)">POS</button>
     <button class="nav-btn" onclick="nav('orders', this); loadOrders();">Orders</button>
-    <button class="nav-btn" onclick="nav('tables', this); loadTableSetup();">Tables</button>
+    <button class="nav-btn" onclick="nav('tables', this); loadTableService();">Tables</button>
     <button class="nav-btn" onclick="nav('menu', this); loadMenuSetup();">Menu</button>
     <button class="nav-btn" onclick="nav('expenses', this); loadExpenses();">Expenses</button>
+  </div>
+
+  <div id="tableMasterModal" class="modal-overlay">
+    <div class="modal" style="width:min(780px,100%);">
+      <h4>Table Master</h4>
+      <div style="display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;">
+        <input type="hidden" id="tableId">
+        <input type="text" id="tableName" placeholder="Table Name (e.g., Table 1)" style="flex:1;">
+        <input type="number" id="tableCapacity" placeholder="Capacity" style="flex:1;">
+        <select id="tableStatus" style="flex:1;">
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+        <button class="btn-primary" style="width: auto;" onclick="saveTableUI()">Save</button>
+      </div>
+      <div style="max-height: 42vh; overflow:auto;">
+        <table>
+          <thead><tr><th>Table Name</th><th>Capacity</th><th>Status</th><th>Edit</th></tr></thead>
+          <tbody id="tableTableBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="closeTableMaster()">Close</button>
+      </div>
+    </div>
   </div>
 
   <div id="confirmModal" class="modal-overlay">
@@ -1171,6 +1256,7 @@
       }
       loadPosMenu();
       loadTableSetup();
+      loadTableService();
       loadOrders();
     };
 
@@ -1202,11 +1288,34 @@
       cart.forEach((item, index) => {
         total += item.price * item.qty;
         cartDiv.innerHTML += `<li class="cart-row">
-          <span>${item.qty}x ${item.name}</span>
-          <span>₹${item.price * item.qty} <button onclick="cart.splice(${index},1); renderCart();" class="cart-remove">✖</button></span>
+          <div class="cart-meta">
+            <span class="cart-name">${item.name}</span>
+            <span class="cart-price">₹${item.price * item.qty}</span>
+          </div>
+          <span class="qty-controls">
+            <button class="qty-btn" onclick="decreaseQty(${index})">−</button>
+            <span class="qty-value">${item.qty}</span>
+            <button class="qty-btn" onclick="increaseQty(${index})">+</button>
+            <button class="qty-btn" onclick="removeFromCart(${index})">✕</button>
+          </span>
         </li>`;
       });
       document.getElementById('cartTotal').innerText = total;
+    }
+    function increaseQty(index) {
+      if (!cart[index]) return;
+      cart[index].qty += 1;
+      renderCart();
+    }
+    function decreaseQty(index) {
+      if (!cart[index]) return;
+      if (cart[index].qty <= 1) return removeFromCart(index);
+      cart[index].qty -= 1;
+      renderCart();
+    }
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      renderCart();
     }
 
     function processOrder() {
@@ -1330,7 +1439,79 @@
         tables.filter(t => t.status === 'Active').forEach(t => {
           posSelect.innerHTML += `<option value="${t.name}">${t.name} (${t.capacity} pax)</option>`;
         });
+        const tableOrderSelect = document.getElementById('tableOrderSelect');
+        tableOrderSelect.innerHTML = '<option value="">Select a table</option>';
+        tables.filter(t => t.status === 'Active').forEach(t => {
+          tableOrderSelect.innerHTML += `<option value="${t.name}">${t.name} (${t.capacity} pax)</option>`;
+        });
       }).getTables();
+    }
+    function loadTableService() {
+      getRunner().withSuccessHandler(function(tables) {
+        getRunner().withSuccessHandler(function(orders) {
+          const wrap = document.getElementById('servingTablesList');
+          const activeTableNames = tables.filter(t => t.status === 'Active').map(t => t.name);
+          const openOrdersByTable = new Map();
+          orders
+            .filter(o => !['Closed', 'Completed', 'Cancelled'].includes(o.status))
+            .forEach(o => openOrdersByTable.set(o.table || 'Takeaway', o));
+
+          if (!activeTableNames.length) {
+            wrap.innerHTML = '<p class="page-intro">No active tables. Add tables from Table Master in hamburger menu.</p>';
+            return;
+          }
+          wrap.innerHTML = '';
+          activeTableNames.forEach(tableName => {
+            const current = openOrdersByTable.get(tableName);
+            wrap.innerHTML += `<div class="card" style="padding:12px; margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:center;">
+                <div>
+                  <strong>${tableName}</strong>
+                  <div style="font-size:12px; color:var(--text-light);">
+                    ${current ? `Serving ${current.customerName || 'Walk-in'} • ₹${current.total}` : 'No active order'}
+                  </div>
+                </div>
+                <button class="btn-secondary" onclick="${current ? `editOrder('${current.id}')` : `startNewOrderForTable('${tableName}')`}">
+                  ${current ? 'Edit Current Order' : 'Create Order'}
+                </button>
+              </div>
+            </div>`;
+          });
+        }).getOrders();
+      }).getTables();
+      loadTableSetup();
+    }
+    function openTableOrderForm() {
+      const tableName = document.getElementById('tableOrderSelect').value;
+      const customerName = (document.getElementById('tableOrderClientName').value || '').trim();
+      const customerPhone = (document.getElementById('tableOrderClientPhone').value || '').trim();
+      if (!tableName) return showToast('Select a table first.', 'info');
+
+      const existing = currentOrders.find(o => o.table === tableName && !['Closed', 'Completed', 'Cancelled'].includes(o.status));
+      if (existing) {
+        editOrder(existing.id);
+        return;
+      }
+      startNewOrderForTable(tableName, customerName, customerPhone);
+    }
+    function startNewOrderForTable(tableName, customerName = '', customerPhone = '') {
+      editingOrderId = '';
+      cart = [];
+      renderCart();
+      document.getElementById('posTableSelect').value = tableName;
+      document.getElementById('clientName').value = customerName;
+      document.getElementById('clientPhone').value = customerPhone;
+      document.getElementById('saveOrderBtn').innerText = 'Save Order';
+      nav('pos');
+      showToast(`New order started for ${tableName}.`, 'info');
+    }
+    function openTableMaster() {
+      loadTableSetup();
+      document.getElementById('tableMasterModal').classList.add('show');
+      document.getElementById('topNav').classList.remove('open');
+    }
+    function closeTableMaster() {
+      document.getElementById('tableMasterModal').classList.remove('show');
     }
 
     function saveTableUI() {
@@ -1346,7 +1527,8 @@
         document.getElementById('tableId').value = '';
         document.getElementById('tableName').value = '';
         document.getElementById('tableCapacity').value = '';
-        loadTableSetup(); 
+        loadTableSetup();
+        loadTableService();
       }).saveTable(table);
     }
 
@@ -1415,6 +1597,7 @@
     function renderOrders(orders) {
         const tbody = document.getElementById('ordersTableBody');
         tbody.innerHTML = '';
+        updateOrderKpis(orders);
         if (!orders.length) {
           tbody.innerHTML = '<tr><td colspan="9">No orders found for today.</td></tr>';
           document.getElementById('ordersSummary').innerText = 'Showing 0 orders for today.';
@@ -1438,6 +1621,14 @@
           </tr>`;
         });
         document.getElementById('ordersSummary').innerText = `Showing ${orders.length} order(s) for today.`;
+    }
+    function updateOrderKpis(orders) {
+      const openCount = orders.filter(o => !['Closed', 'Completed', 'Cancelled'].includes(o.status)).length;
+      const closedCount = orders.filter(o => ['Closed', 'Completed'].includes(o.status)).length;
+      const cancelledCount = orders.filter(o => o.status === 'Cancelled').length;
+      document.getElementById('kpiOpen').innerText = openCount;
+      document.getElementById('kpiClosed').innerText = closedCount;
+      document.getElementById('kpiCancelled').innerText = cancelledCount;
     }
 
     function filterOrdersList() {

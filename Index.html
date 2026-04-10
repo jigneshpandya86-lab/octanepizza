@@ -965,6 +965,8 @@
     let currentOrders = [];
 
     const IS_APPS_SCRIPT_RUNTIME = typeof google !== 'undefined' && google.script && google.script.run;
+    const GAS_WEB_APP_URL = (window.GAS_WEB_APP_URL || localStorage.getItem('GAS_WEB_APP_URL') || '').trim();
+    const IS_WEB_APP_BRIDGE_MODE = !IS_APPS_SCRIPT_RUNTIME && !!GAS_WEB_APP_URL;
 
     const LOCAL_DEMO_DB = {
       menu: [
@@ -980,6 +982,17 @@
       expenses: []
     };
 
+    async function callWebApp(action, payload = {}) {
+      const res = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, payload })
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || `Request failed for ${action}`);
+      return data.result;
+    }
+
     function getRunner() {
       if (IS_APPS_SCRIPT_RUNTIME) return google.script.run;
 
@@ -994,11 +1007,43 @@
           failureHandler = typeof fn === 'function' ? fn : () => {};
           return api;
         },
-        getMenu() { setTimeout(() => successHandler([...LOCAL_DEMO_DB.menu]), 0); return api; },
-        getTables() { setTimeout(() => successHandler([...LOCAL_DEMO_DB.tables]), 0); return api; },
-        getOrders() { setTimeout(() => successHandler([...LOCAL_DEMO_DB.orders]), 0); return api; },
-        getExpenses() { setTimeout(() => successHandler([...LOCAL_DEMO_DB.expenses]), 0); return api; },
+        getMenu() {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('getMenu').then(successHandler).catch(failureHandler);
+          } else {
+            setTimeout(() => successHandler([...LOCAL_DEMO_DB.menu]), 0);
+          }
+          return api;
+        },
+        getTables() {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('getTables').then(successHandler).catch(failureHandler);
+          } else {
+            setTimeout(() => successHandler([...LOCAL_DEMO_DB.tables]), 0);
+          }
+          return api;
+        },
+        getOrders() {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('getOrders').then(successHandler).catch(failureHandler);
+          } else {
+            setTimeout(() => successHandler([...LOCAL_DEMO_DB.orders]), 0);
+          }
+          return api;
+        },
+        getExpenses() {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('getExpenses').then(successHandler).catch(failureHandler);
+          } else {
+            setTimeout(() => successHandler([...LOCAL_DEMO_DB.expenses]), 0);
+          }
+          return api;
+        },
         saveOrder(order) {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('saveOrder', order).then(successHandler).catch(failureHandler);
+            return api;
+          }
           try {
             const id = order.id || `O${Date.now()}`;
             const row = {
@@ -1017,6 +1062,10 @@
           return api;
         },
         saveTable(table) {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('saveTable', table).then(successHandler).catch(failureHandler);
+            return api;
+          }
           const id = table.id || `T${Date.now()}`;
           const row = { ...table, id };
           const idx = LOCAL_DEMO_DB.tables.findIndex(t => t.id === id);
@@ -1026,6 +1075,10 @@
           return api;
         },
         saveMenuItem(item) {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('saveMenuItem', item).then(successHandler).catch(failureHandler);
+            return api;
+          }
           const id = item.id || `M${Date.now()}`;
           const row = { ...item, id };
           const idx = LOCAL_DEMO_DB.menu.findIndex(m => m.id === id);
@@ -1035,18 +1088,30 @@
           return api;
         },
         updateOrderStatus(id, status) {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('updateOrderStatus', { id, status }).then(successHandler).catch(failureHandler);
+            return api;
+          }
           const row = LOCAL_DEMO_DB.orders.find(o => o.id === id);
           if (row) row.status = status;
           setTimeout(() => successHandler(true), 0);
           return api;
         },
         recordOrderPayment(id, mode) {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('recordOrderPayment', { id, mode }).then(successHandler).catch(failureHandler);
+            return api;
+          }
           const row = LOCAL_DEMO_DB.orders.find(o => o.id === id);
           if (row) row.mode = mode;
           setTimeout(() => successHandler(true), 0);
           return api;
         },
         saveExpense(exp) {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('saveExpense', exp).then(successHandler).catch(failureHandler);
+            return api;
+          }
           LOCAL_DEMO_DB.expenses.unshift({
             date: new Date().toLocaleDateString(),
             category: exp.category,
@@ -1098,8 +1163,10 @@
 
     // Startup
     window.onload = function() {
-      if (!IS_APPS_SCRIPT_RUNTIME) {
-        showToast('GitHub Pages demo mode: live Google Sheets data is only available in Apps Script deployment.', 'info');
+      if (IS_WEB_APP_BRIDGE_MODE) {
+        showToast('Connected to Apps Script Web App backend.', 'success');
+      } else if (!IS_APPS_SCRIPT_RUNTIME) {
+        showToast('GitHub Pages demo mode: set window.GAS_WEB_APP_URL to use live Apps Script data.', 'info');
       }
       loadPosMenu();
       loadTableSetup();

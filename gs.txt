@@ -27,11 +27,63 @@ function setupDatabase() {
 
 const DB_ID = '1a4VY0pbPRmmUUU9W257XkZiOS5a93yg0VpZ4bzfnNzc'; 
 
-function doGet() {
+function doGet(e) {
+  if (e && e.parameter && e.parameter.api === '1') {
+    const action = e.parameter.action;
+    return jsonOutput(handleApiAction(action, {}));
+  }
   return HtmlService.createHtmlOutputFromFile('Index')
     .setTitle('Octane Pizza POS')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+function doPost(e) {
+  try {
+    const body = e && e.postData && e.postData.contents ? JSON.parse(e.postData.contents) : {};
+    const action = body.action;
+    const payload = body.payload || {};
+    return jsonOutput(handleApiAction(action, payload));
+  } catch (err) {
+    return jsonOutput({ ok: false, error: err.message || String(err) });
+  }
+}
+
+function handleApiAction(action, payload) {
+  try {
+    switch (action) {
+      case 'getMenu':
+        return { ok: true, result: getMenu() };
+      case 'getTables':
+        return { ok: true, result: getTables() };
+      case 'getOrders':
+        return { ok: true, result: getOrders() };
+      case 'getExpenses':
+        return { ok: true, result: getExpenses() };
+      case 'saveOrder':
+        return { ok: true, result: saveOrder(payload) };
+      case 'saveMenuItem':
+        return { ok: true, result: saveMenuItem(payload) };
+      case 'saveTable':
+        return { ok: true, result: saveTable(payload) };
+      case 'updateOrderStatus':
+        return { ok: true, result: updateOrderStatus(payload.id, payload.status) };
+      case 'recordOrderPayment':
+        return { ok: true, result: recordOrderPayment(payload.id, payload.mode) };
+      case 'saveExpense':
+        return { ok: true, result: saveExpense(payload) };
+      default:
+        return { ok: false, error: 'Unknown action: ' + action };
+    }
+  } catch (err) {
+    return { ok: false, error: err.message || String(err) };
+  }
+}
+
+function jsonOutput(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 // --- MENU FUNCTIONS ---

@@ -508,6 +508,7 @@
       .actions-group {
         justify-content: flex-start;
         flex-direction: row;
+        flex-wrap: nowrap;
         gap: 6px;
         margin-top: 6px;
         grid-column: 1 / -1;
@@ -518,6 +519,7 @@
         min-height: auto;
         height: auto;
         flex: 1;
+        min-width: 0;
       }
       #posMenuList {
         grid-template-columns: repeat(3, 1fr) !important;
@@ -595,8 +597,8 @@
       #orders tr { padding: 8px; grid-template-columns: 1fr 1fr; }
       #orders td { font-size: 10px; }
       #orders td::before { font-size: 7px; }
-      .actions-group { gap: 4px; }
-      .actions-group button { font-size: 9px; padding: 4px 6px; }
+      .actions-group { gap: 4px; flex-wrap: nowrap; }
+      .actions-group button { font-size: 9px; padding: 4px 6px; min-width: 0; }
       .compact-order-title { font-size: 22px; }
       .compact-order h2 { font-size: 20px; }
       .compact-order-header { gap: 10px; }

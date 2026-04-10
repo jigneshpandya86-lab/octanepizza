@@ -607,7 +607,7 @@
         right: 0;
         background: linear-gradient(135deg, var(--primary), var(--primary-light));
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         z-index: 1200;
         border-top: 2px solid rgba(255, 107, 53, 0.3);
         box-shadow: 0 -4px 16px rgba(0,0,0,0.1);
@@ -751,17 +751,8 @@
     </div>
 
     <div id="tables" class="page card">
-      <h3>Table Service</h3>
-      <p class="page-intro">Tap a table to start a new order or open the currently serving one for edits.</p>
-      <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: end;">
-        <select id="tableOrderSelect" style="flex:1; min-width: 220px;">
-          <option value="">Select a table</option>
-        </select>
-        <input type="text" id="tableOrderClientName" placeholder="Customer name (optional)" style="flex:1;">
-        <input type="text" id="tableOrderClientPhone" placeholder="Phone (optional)" style="flex:1;" inputmode="numeric">
-        <button class="btn-primary" style="width: auto;" onclick="openTableOrderForm()">Open Order Form</button>
-      </div>
-      <h3 style="margin-top: 4px;">Currently Serving</h3>
+      <h3>Currently Serving</h3>
+      <p class="page-intro">Manage active table orders. Use Table Master in hamburger menu for table setup.</p>
       <div id="servingTablesList"></div>
     </div>
 
@@ -807,10 +798,32 @@
 
   <div class="mobile-bottom-nav">
     <button class="nav-btn active" onclick="nav('pos', this)">POS</button>
-    <button class="nav-btn" onclick="nav('orders', this); loadOrders();">Orders</button>
     <button class="nav-btn" onclick="nav('tables', this); loadTableService();">Tables</button>
-    <button class="nav-btn" onclick="nav('menu', this); loadMenuSetup();">Menu</button>
-    <button class="nav-btn" onclick="nav('expenses', this); loadExpenses();">Expenses</button>
+  </div>
+
+  <div id="tableMasterModal" class="modal-overlay">
+    <div class="modal" style="width:min(780px,100%);">
+      <h4>Table Master</h4>
+      <div style="display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;">
+        <input type="hidden" id="tableId">
+        <input type="text" id="tableName" placeholder="Table Name (e.g., Table 1)" style="flex:1;">
+        <input type="number" id="tableCapacity" placeholder="Capacity" style="flex:1;">
+        <select id="tableStatus" style="flex:1;">
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+        <button class="btn-primary" style="width: auto;" onclick="saveTableUI()">Save</button>
+      </div>
+      <div style="max-height: 42vh; overflow:auto;">
+        <table>
+          <thead><tr><th>Table Name</th><th>Capacity</th><th>Status</th><th>Edit</th></tr></thead>
+          <tbody id="tableTableBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="closeTableMaster()">Close</button>
+      </div>
+    </div>
   </div>
 
   <div id="tableMasterModal" class="modal-overlay">
@@ -1480,19 +1493,6 @@
         }).getOrders();
       }).getTables();
       loadTableSetup();
-    }
-    function openTableOrderForm() {
-      const tableName = document.getElementById('tableOrderSelect').value;
-      const customerName = (document.getElementById('tableOrderClientName').value || '').trim();
-      const customerPhone = (document.getElementById('tableOrderClientPhone').value || '').trim();
-      if (!tableName) return showToast('Select a table first.', 'info');
-
-      const existing = currentOrders.find(o => o.table === tableName && !['Closed', 'Completed', 'Cancelled'].includes(o.status));
-      if (existing) {
-        editOrder(existing.id);
-        return;
-      }
-      startNewOrderForTable(tableName, customerName, customerPhone);
     }
     function startNewOrderForTable(tableName, customerName = '', customerPhone = '') {
       editingOrderId = '';

@@ -386,6 +386,10 @@
     #printSection { display: none; }
 
     @media print {
+      @page {
+        size: A4;
+        margin: 10mm;
+      }
       body * { visibility: hidden; }
       #printSection, #printSection * { visibility: visible; }
       #printSection {
@@ -781,6 +785,8 @@
       <p id="billText"></p>
       <label style="font-size: 12px; font-weight: bold;">Discount (%):</label>
       <input id="billDiscountPercent" type="number" min="0" max="100" step="0.5" value="0" placeholder="Enter discount %">
+      <label style="font-size: 12px; font-weight: bold;">Fixed Discount (₹):</label>
+      <input id="billDiscountFixed" type="number" min="0" step="0.5" value="0" placeholder="Enter fixed discount amount">
       <label style="font-size: 12px; font-weight: bold;">Payment Mode:</label>
       <select id="billPaymentMode">
         <option value="Cash">Cash</option>
@@ -798,48 +804,49 @@
   <div id="printSection">
     <style>
       .receipt-container {
-        width: 80mm;
+        width: 190mm;
+        min-height: 277mm;
         margin: 0 auto;
-        font-family: monospace;
-        font-size: 11px;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        font-size: 13px;
         line-height: 1.4;
       }
       .receipt-header {
         text-align: center;
-        margin-bottom: 8px;
-        border-bottom: 1px dotted #000;
-        padding-bottom: 8px;
+        margin-bottom: 14px;
+        border-bottom: 1px solid #000;
+        padding-bottom: 10px;
       }
       .receipt-header .logo {
-        font-size: 28px;
+        font-size: 32px;
         margin-bottom: 4px;
       }
       .receipt-header h2 {
         margin: 0;
-        font-size: 14px;
+        font-size: 24px;
         font-weight: bold;
       }
       .receipt-header p {
-        margin: 2px 0;
-        font-size: 10px;
+        margin: 4px 0;
+        font-size: 13px;
       }
       .receipt-section {
-        margin: 8px 0;
-        border-bottom: 1px dotted #000;
-        padding-bottom: 6px;
+        margin: 10px 0;
+        border-bottom: 1px solid #000;
+        padding-bottom: 8px;
       }
       .receipt-row {
         display: flex;
         justify-content: space-between;
-        margin: 3px 0;
-        font-size: 10px;
+        margin: 4px 0;
+        font-size: 13px;
       }
       .receipt-row-two-col {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 20px;
-        margin: 3px 0;
-        font-size: 10px;
+        margin: 4px 0;
+        font-size: 13px;
       }
       .receipt-label {
         font-weight: bold;
@@ -847,41 +854,42 @@
       .items-table {
         width: 100%;
         border-collapse: collapse;
-        margin: 8px 0;
-        font-size: 10px;
+        margin: 10px 0;
+        font-size: 13px;
       }
       .items-table th {
         border-bottom: 1px solid #000;
-        padding: 3px 2px;
+        padding: 8px 6px;
         text-align: left;
         font-weight: bold;
       }
       .items-table td {
-        padding: 3px 2px;
-        border-bottom: 1px dotted #000;
+        padding: 8px 6px;
+        border-bottom: 1px solid #d9d9d9;
       }
       .items-table .text-right {
         text-align: right;
       }
       .receipt-total {
-        margin: 8px 0;
-        font-size: 10px;
+        margin: 10px 0;
+        font-size: 13px;
       }
       .total-row {
         display: flex;
         justify-content: space-between;
-        margin: 3px 0;
+        margin: 6px 0;
       }
       .total-row.grand {
         font-weight: bold;
-        border-top: 1px solid #000;
-        border-bottom: 1px solid #000;
-        padding: 3px 0;
+        border-top: 2px solid #000;
+        border-bottom: 2px solid #000;
+        padding: 8px 0;
+        font-size: 15px;
       }
       .receipt-footer {
         text-align: center;
-        margin-top: 8px;
-        font-size: 9px;
+        margin-top: 12px;
+        font-size: 11px;
         line-height: 1.3;
       }
     </style>
@@ -925,17 +933,13 @@
           <span>Sub-Total:</span>
           <span>₹ <span id="printSubtotal"></span></span>
         </div>
-        <div class="total-row" id="printCGSTRow" style="display:none;">
-          <span>CGST:</span>
-          <span><span id="printCGSTPercent"></span>% ₹ <span id="printCGSTAmount"></span></span>
-        </div>
-        <div class="total-row" id="printSGSTRow" style="display:none;">
-          <span>SGST:</span>
-          <span><span id="printSGSTPercent"></span>% ₹ <span id="printSGSTAmount"></span></span>
-        </div>
         <div class="total-row" id="printDiscountRow" style="display:none;">
           <span>Discount:</span>
           <span><span id="printDiscountPercent"></span>% -₹ <span id="printDiscountAmount"></span></span>
+        </div>
+        <div class="total-row" id="printFixedDiscountRow" style="display:none;">
+          <span>Fixed Discount:</span>
+          <span>-₹ <span id="printFixedDiscountAmount"></span></span>
         </div>
       </div>
 
@@ -946,7 +950,6 @@
 
       <div class="receipt-footer">
         <p style="margin: 6px 0; font-weight: bold;">★SAVE PAPER SAVE NATURE★</p>
-        <p>YOU CAN CALL US ON 1800 226344 (TOLL-FREE) FOR QUERIES/COMPLAINTS.</p>
         <p id="printTime"></p>
       </div>
     </div>
@@ -1086,6 +1089,7 @@
       const subtotal = Number(orderData.subtotal ?? orderData.total ?? 0);
       const discountPercent = Number(orderData.discountPercent || 0);
       const discountAmount = Number(orderData.discountAmount || 0);
+      const fixedDiscountAmount = Number(orderData.fixedDiscountAmount || 0);
       const finalTotal = Number(orderData.total || 0);
 
       document.getElementById('printId').innerText = orderData.id;
@@ -1121,29 +1125,12 @@
         discountRow.style.display = 'none';
       }
 
-      // Handle tax rows if applicable
-      const cgstPercent = 2.5;
-      const sgstPercent = 2.5;
-      const cgstAmount = subtotal * (cgstPercent / 100);
-      const sgstAmount = subtotal * (sgstPercent / 100);
-
-      const cgstRow = document.getElementById('printCGSTRow');
-      const sgstRow = document.getElementById('printSGSTRow');
-
-      if (cgstAmount > 0) {
-        cgstRow.style.display = 'flex';
-        document.getElementById('printCGSTPercent').innerText = cgstPercent;
-        document.getElementById('printCGSTAmount').innerText = cgstAmount.toFixed(2);
+      const fixedDiscountRow = document.getElementById('printFixedDiscountRow');
+      if (fixedDiscountAmount > 0) {
+        fixedDiscountRow.style.display = 'flex';
+        document.getElementById('printFixedDiscountAmount').innerText = fixedDiscountAmount.toFixed(2);
       } else {
-        cgstRow.style.display = 'none';
-      }
-
-      if (sgstAmount > 0) {
-        sgstRow.style.display = 'flex';
-        document.getElementById('printSGSTPercent').innerText = sgstPercent;
-        document.getElementById('printSGSTAmount').innerText = sgstAmount.toFixed(2);
-      } else {
-        sgstRow.style.display = 'none';
+        fixedDiscountRow.style.display = 'none';
       }
 
       // Set time
@@ -1351,6 +1338,7 @@
     function openBillModal(orderId) {
       pendingBillOrderId = orderId;
       document.getElementById('billDiscountPercent').value = 0;
+      document.getElementById('billDiscountFixed').value = 0;
       document.getElementById('billPaymentMode').value = 'Cash';
       document.getElementById('billText').innerText = `Generate printable restaurant bill for order ${orderId}.`;
       document.getElementById('billModal').classList.add('show');
@@ -1372,14 +1360,19 @@
       if (discountPercent < 0 || discountPercent > 100) {
         return showToast('Discount must be between 0 and 100%.', 'info');
       }
+      const fixedDiscountAmount = Number(document.getElementById('billDiscountFixed').value || 0);
+      if (fixedDiscountAmount < 0) {
+        return showToast('Fixed discount cannot be negative.', 'info');
+      }
       const subtotal = Number(order.total || 0);
       const discountAmount = subtotal * (discountPercent / 100);
-      const finalTotal = Math.max(0, subtotal - discountAmount);
+      const finalTotal = Math.max(0, subtotal - discountAmount - fixedDiscountAmount);
       const printPayload = {
         ...order,
         subtotal: subtotal,
         discountPercent: discountPercent,
         discountAmount: discountAmount,
+        fixedDiscountAmount: fixedDiscountAmount,
         total: finalTotal,
         mode: document.getElementById('billPaymentMode').value
       };

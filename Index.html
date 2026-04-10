@@ -964,6 +964,167 @@
     let pendingBillOrderId = null;
     let currentOrders = [];
 
+    const IS_APPS_SCRIPT_RUNTIME = typeof google !== 'undefined' && google.script && google.script.run;
+    const GAS_WEB_APP_URL = (window.GAS_WEB_APP_URL || localStorage.getItem('GAS_WEB_APP_URL') || '').trim();
+    const IS_WEB_APP_BRIDGE_MODE = !IS_APPS_SCRIPT_RUNTIME && !!GAS_WEB_APP_URL;
+
+    const LOCAL_DEMO_DB = {
+      menu: [
+        { id: 'M101', name: 'Margherita Pizza', category: 'Pizza', price: 249, status: 'Active' },
+        { id: 'M102', name: 'Veggie Supreme', category: 'Pizza', price: 329, status: 'Active' },
+        { id: 'M103', name: 'Garlic Bread', category: 'Sides', price: 119, status: 'Active' }
+      ],
+      tables: [
+        { id: 'T1', name: 'Table 1', capacity: 4, status: 'Active' },
+        { id: 'T2', name: 'Table 2', capacity: 2, status: 'Active' }
+      ],
+      orders: [],
+      expenses: []
+    };
+
+    async function callWebApp(action, payload = {}) {
+      const res = await fetch(GAS_WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, payload })
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || `Request failed for ${action}`);
+      return data.result;
+    }
+
+    function getRunner() {
+      if (IS_APPS_SCRIPT_RUNTIME) return google.script.run;
+
+      let successHandler = () => {};
+      let failureHandler = () => {};
+      const api = {
+        withSuccessHandler(fn) {
+          successHandler = typeof fn === 'function' ? fn : () => {};
+          return api;
+        },
+        withFailureHandler(fn) {
+          failureHandler = typeof fn === 'function' ? fn : () => {};
+          return api;
+        },
+        getMenu() {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('getMenu').then(successHandler).catch(failureHandler);
+          } else {
+            setTimeout(() => successHandler([...LOCAL_DEMO_DB.menu]), 0);
+          }
+          return api;
+        },
+        getTables() {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('getTables').then(successHandler).catch(failureHandler);
+          } else {
+            setTimeout(() => successHandler([...LOCAL_DEMO_DB.tables]), 0);
+          }
+          return api;
+        },
+        getOrders() {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('getOrders').then(successHandler).catch(failureHandler);
+          } else {
+            setTimeout(() => successHandler([...LOCAL_DEMO_DB.orders]), 0);
+          }
+          return api;
+        },
+        getExpenses() {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('getExpenses').then(successHandler).catch(failureHandler);
+          } else {
+            setTimeout(() => successHandler([...LOCAL_DEMO_DB.expenses]), 0);
+          }
+          return api;
+        },
+        saveOrder(order) {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('saveOrder', order).then(successHandler).catch(failureHandler);
+            return api;
+          }
+          try {
+            const id = order.id || `O${Date.now()}`;
+            const row = {
+              ...order,
+              id,
+              date: new Date().toLocaleString(),
+              status: 'Open'
+            };
+            const idx = LOCAL_DEMO_DB.orders.findIndex(o => o.id === id);
+            if (idx >= 0) LOCAL_DEMO_DB.orders[idx] = row;
+            else LOCAL_DEMO_DB.orders.unshift(row);
+            setTimeout(() => successHandler({ id }), 0);
+          } catch (err) {
+            setTimeout(() => failureHandler(err), 0);
+          }
+          return api;
+        },
+        saveTable(table) {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('saveTable', table).then(successHandler).catch(failureHandler);
+            return api;
+          }
+          const id = table.id || `T${Date.now()}`;
+          const row = { ...table, id };
+          const idx = LOCAL_DEMO_DB.tables.findIndex(t => t.id === id);
+          if (idx >= 0) LOCAL_DEMO_DB.tables[idx] = row;
+          else LOCAL_DEMO_DB.tables.push(row);
+          setTimeout(() => successHandler(true), 0);
+          return api;
+        },
+        saveMenuItem(item) {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('saveMenuItem', item).then(successHandler).catch(failureHandler);
+            return api;
+          }
+          const id = item.id || `M${Date.now()}`;
+          const row = { ...item, id };
+          const idx = LOCAL_DEMO_DB.menu.findIndex(m => m.id === id);
+          if (idx >= 0) LOCAL_DEMO_DB.menu[idx] = row;
+          else LOCAL_DEMO_DB.menu.push(row);
+          setTimeout(() => successHandler(true), 0);
+          return api;
+        },
+        updateOrderStatus(id, status) {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('updateOrderStatus', { id, status }).then(successHandler).catch(failureHandler);
+            return api;
+          }
+          const row = LOCAL_DEMO_DB.orders.find(o => o.id === id);
+          if (row) row.status = status;
+          setTimeout(() => successHandler(true), 0);
+          return api;
+        },
+        recordOrderPayment(id, mode) {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('recordOrderPayment', { id, mode }).then(successHandler).catch(failureHandler);
+            return api;
+          }
+          const row = LOCAL_DEMO_DB.orders.find(o => o.id === id);
+          if (row) row.mode = mode;
+          setTimeout(() => successHandler(true), 0);
+          return api;
+        },
+        saveExpense(exp) {
+          if (IS_WEB_APP_BRIDGE_MODE) {
+            callWebApp('saveExpense', exp).then(successHandler).catch(failureHandler);
+            return api;
+          }
+          LOCAL_DEMO_DB.expenses.unshift({
+            date: new Date().toLocaleDateString(),
+            category: exp.category,
+            amount: exp.amount,
+            desc: exp.desc
+          });
+          setTimeout(() => successHandler(true), 0);
+          return api;
+        }
+      };
+      return api;
+    }
+
     // Navigation
     function nav(pageId, btnEl) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1002,6 +1163,11 @@
 
     // Startup
     window.onload = function() {
+      if (IS_WEB_APP_BRIDGE_MODE) {
+        showToast('Connected to Apps Script Web App backend.', 'success');
+      } else if (!IS_APPS_SCRIPT_RUNTIME) {
+        showToast('GitHub Pages demo mode: set window.GAS_WEB_APP_URL to use live Apps Script data.', 'info');
+      }
       loadPosMenu();
       loadTableSetup();
       loadOrders();
@@ -1009,7 +1175,7 @@
 
     // --- POS FUNCTIONS ---
     function loadPosMenu() {
-      google.script.run.withSuccessHandler(function(menu) {
+      getRunner().withSuccessHandler(function(menu) {
         globalMenu = menu;
         const posDiv = document.getElementById('posMenuList');
         posDiv.innerHTML = '';
@@ -1072,7 +1238,7 @@
       const saveBtn = document.getElementById('saveOrderBtn');
       saveBtn.innerText = editingOrderId ? 'Saving Changes...' : 'Saving...';
       saveBtn.disabled = true;
-      google.script.run.withSuccessHandler(function(res) {
+      getRunner().withSuccessHandler(function(res) {
         cart = [];
         renderCart();
         document.getElementById('clientName').value = '';
@@ -1146,7 +1312,7 @@
 
     // --- TABLE SETUP LOGIC ---
     function loadTableSetup() {
-      google.script.run.withSuccessHandler(function(tables) {
+      getRunner().withSuccessHandler(function(tables) {
         const tbody = document.getElementById('tableTableBody');
         tbody.innerHTML = '';
         
@@ -1175,7 +1341,7 @@
       };
       if(!table.name) return alert('Table Name is required');
       
-      google.script.run.withSuccessHandler(() => {
+      getRunner().withSuccessHandler(() => {
         document.getElementById('tableId').value = '';
         document.getElementById('tableName').value = '';
         document.getElementById('tableCapacity').value = '';
@@ -1192,7 +1358,7 @@
 
     // --- MENU SETUP ---
     function loadMenuSetup() {
-      google.script.run.withSuccessHandler(function(menu) {
+      getRunner().withSuccessHandler(function(menu) {
         const tbody = document.getElementById('menuTableBody');
         tbody.innerHTML = '';
         menu.forEach(item => {
@@ -1215,7 +1381,7 @@
       };
       if(!item.name || !item.price) return alert('Name and Price required');
       
-      google.script.run.withSuccessHandler(() => {
+      getRunner().withSuccessHandler(() => {
         document.getElementById('menuId').value = '';
         document.getElementById('menuName').value = '';
         document.getElementById('menuPrice').value = '';
@@ -1234,7 +1400,7 @@
 
     // --- ORDERS LOG ---
     function loadOrders() {
-      google.script.run.withSuccessHandler(function(orders) {
+      getRunner().withSuccessHandler(function(orders) {
         currentOrders = orders;
         renderOrders(orders);
       }).withFailureHandler(function(err) {
@@ -1293,7 +1459,7 @@
     }
 
     function updateStatus(id, status) {
-      google.script.run
+      getRunner()
         .withSuccessHandler(() => {
           showToast(`Order ${id} marked ${status}.`, 'success');
           loadOrders();
@@ -1384,7 +1550,7 @@
     function saveCompletedPayment() {
       if (!pendingPaymentOrder) return;
       const payMode = document.getElementById('completePaymentMode').value;
-      google.script.run
+      getRunner()
         .withSuccessHandler(() => {
           showToast(`Payment (${payMode}) recorded for order ${pendingPaymentOrder}.`, 'success');
           closePaymentModal();
@@ -1396,7 +1562,7 @@
 
     // --- EXPENSES ---
     function loadExpenses() {
-      google.script.run
+      getRunner()
         .withSuccessHandler(function(exp) {
           const tbody = document.getElementById('expenseTableBody');
           tbody.innerHTML = '';
@@ -1426,7 +1592,7 @@
       if(!amount || amount <= 0) {
         return showToast('Please enter a valid amount greater than 0.', 'info');
       }
-      google.script.run
+      getRunner()
         .withSuccessHandler(() => {
           document.getElementById('expAmount').value = '';
           document.getElementById('expDesc').value = '';

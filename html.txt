@@ -485,8 +485,6 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 8px 12px;
-        max-height: calc(100vh / 3.5);
-        overflow: hidden;
       }
       #orders tr:hover { background: #f8f9fa; }
       #orders td {
@@ -594,7 +592,7 @@
       #posMenuList { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
       .menu-item-btn { min-height: 65px; font-size: 10px; padding: 6px; }
       #orders table { grid-template-columns: 1fr; gap: 8px; }
-      #orders tr { padding: 8px; grid-template-columns: 1fr 1fr; max-height: calc(100vh / 3.5); }
+      #orders tr { padding: 8px; grid-template-columns: 1fr 1fr; }
       #orders td { font-size: 10px; }
       #orders td::before { font-size: 7px; }
       .actions-group { gap: 4px; }

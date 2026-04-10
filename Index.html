@@ -826,6 +826,31 @@
     </div>
   </div>
 
+  <div id="tableMasterModal" class="modal-overlay">
+    <div class="modal" style="width:min(780px,100%);">
+      <h4>Table Master</h4>
+      <div style="display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;">
+        <input type="hidden" id="tableId">
+        <input type="text" id="tableName" placeholder="Table Name (e.g., Table 1)" style="flex:1;">
+        <input type="number" id="tableCapacity" placeholder="Capacity" style="flex:1;">
+        <select id="tableStatus" style="flex:1;">
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+        <button class="btn-primary" style="width: auto;" onclick="saveTableUI()">Save</button>
+      </div>
+      <div style="max-height: 42vh; overflow:auto;">
+        <table>
+          <thead><tr><th>Table Name</th><th>Capacity</th><th>Status</th><th>Edit</th></tr></thead>
+          <tbody id="tableTableBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="closeTableMaster()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <div id="confirmModal" class="modal-overlay">
     <div class="modal">
       <h4>Confirm Order</h4>
@@ -1426,6 +1451,11 @@
         posSelect.innerHTML = '<option value="Takeaway">Takeaway / No Table</option>';
         tables.filter(t => t.status === 'Active').forEach(t => {
           posSelect.innerHTML += `<option value="${t.name}">${t.name} (${t.capacity} pax)</option>`;
+        });
+        const tableOrderSelect = document.getElementById('tableOrderSelect');
+        tableOrderSelect.innerHTML = '<option value="">Select a table</option>';
+        tables.filter(t => t.status === 'Active').forEach(t => {
+          tableOrderSelect.innerHTML += `<option value="${t.name}">${t.name} (${t.capacity} pax)</option>`;
         });
       }).getTables();
     }

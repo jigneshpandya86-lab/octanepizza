@@ -1660,9 +1660,7 @@
         .updateOrderStatus(id, status);
     }
 
-    function editOrder(orderId) {
-      const order = currentOrders.find(o => o.id === orderId);
-      if (!order) return showToast(`Order ${orderId} not found.`, 'info');
+    function beginOrderEdit(order) {
       editingOrderId = order.id;
       cart = (order.items || []).map(item => ({ ...item }));
       renderCart();
@@ -1671,7 +1669,25 @@
       document.getElementById('posTableSelect').value = order.table || 'Takeaway';
       document.getElementById('saveOrderBtn').innerText = 'Save Changes';
       nav('pos');
-      showToast(`Editing order ${orderId}. Update items and save.`, 'info');
+      showToast(`Editing order ${order.id}. Update items and save.`, 'info');
+    }
+
+    function editOrder(orderId) {
+      const order = currentOrders.find(o => o.id === orderId);
+      if (order) {
+        beginOrderEdit(order);
+        return;
+      }
+
+      getRunner()
+        .withSuccessHandler((orders) => {
+          const latestOrder = orders.find(o => o.id === orderId);
+          if (!latestOrder) return showToast(`Order ${orderId} not found.`, 'info');
+          currentOrders = orders;
+          beginOrderEdit(latestOrder);
+        })
+        .withFailureHandler((err) => showToast(`Unable to open ${orderId}: ${err.message || err}`, 'info'))
+        .getOrders();
     }
 
     function closeOrder(orderId) {

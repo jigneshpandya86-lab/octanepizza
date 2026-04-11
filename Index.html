@@ -125,6 +125,11 @@
     .table-lock-btn { border:1px solid var(--line); background:#fff; color:var(--text); border-radius:999px; padding:8px 12px; font-weight:700; cursor:pointer; }
     .table-lock-btn.active { background:#0f172a; color:#fff; border-color:#0f172a; }
     .serving-card-active { background:#ecfdf3; border:1px solid #b7ebcf; }
+    .serving-card-row { display:flex; justify-content:space-between; gap:12px; align-items:center; }
+    .serving-card-title { font-size: 24px; line-height: 1.2; margin: 0; }
+    .serving-card-actions { display:flex; gap:6px; align-items:center; margin-left:auto; flex-wrap:wrap; justify-content:flex-end; }
+    .serving-card-actions .icon-btn { width:40px; height:40px; font-size:18px; }
+    .serving-card-actions .btn-secondary:not(.icon-btn) { min-width: 170px; }
     .menu-lock-hint { margin: 8px 0 0; font-size: 12px; color: #4f5f73; }
 
     .card {
@@ -649,6 +654,17 @@
       #menu > div .btn-primary,
       #expenses > div .btn-primary {
         width: 100% !important;
+      }
+      .serving-card-row {
+        flex-wrap: wrap;
+      }
+      .serving-card-actions {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-start;
+      }
+      .serving-card-actions .btn-secondary:not(.icon-btn) {
+        width: 100%;
       }
     }
 
@@ -1550,16 +1566,22 @@
           activeTableNames.forEach(tableName => {
             const current = openOrdersByTable.get(tableName);
             wrap.innerHTML += `<div class="card ${current ? 'serving-card-active' : ''}" style="padding:12px; margin-bottom:10px;">
-              <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:center;">
-                <div>
-                  <strong>${tableName}</strong>
-                  <div style="font-size:12px; color:var(--text-light);">
-                    ${current ? `Serving ${current.customerName || 'Walk-in'} • ₹${current.total}` : 'No active order'}
-                  </div>
+              <div class="serving-card-row">
+                <strong class="serving-card-title">${tableName}</strong>
+                <div class="serving-card-actions">
+                  ${current ? `
+                    <button title="Edit Order" class="btn-secondary icon-btn" onclick="editOrder('${current.id}')">✏️</button>
+                    <button title="Mark Closed" class="btn-secondary icon-btn" onclick="closeOrder('${current.id}')">✅</button>
+                    <button title="Record Payment" class="btn-secondary icon-btn" onclick="openPaymentModal('${current.id}')">💳</button>
+                    <button title="Generate Bill" class="btn-secondary icon-btn" onclick="openBillModal('${current.id}')">🧾</button>
+                    <button title="Cancel Order" class="btn-secondary icon-btn" onclick="cancelOrder('${current.id}')">❌</button>
+                  ` : `
+                    <button class="btn-secondary" onclick="startNewOrderForTable('${tableName}')">Create Order</button>
+                  `}
                 </div>
-                <button class="btn-secondary" onclick="${current ? `editOrder('${current.id}')` : `startNewOrderForTable('${tableName}')`}">
-                  ${current ? 'Edit Current Order' : 'Create Order'}
-                </button>
+              </div>
+              <div style="font-size:12px; color:var(--text-light); margin-top:6px;">
+                ${current ? `Serving ${current.customerName || 'Walk-in'} • ₹${current.total}` : 'No active order'}
               </div>
             </div>`;
           });

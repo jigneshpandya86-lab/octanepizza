@@ -125,10 +125,9 @@
     .table-lock-btn { border:1px solid var(--line); background:#fff; color:var(--text); border-radius:999px; padding:8px 12px; font-weight:700; cursor:pointer; }
     .table-lock-btn.active { background:#0f172a; color:#fff; border-color:#0f172a; }
     .serving-card-active { background:#ecfdf3; border:1px solid #b7ebcf; }
-    .serving-card-row { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:center; }
-    .serving-card-heading { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-    .serving-card-heading strong { font-size: 24px; line-height: 1.2; }
-    .serving-card-row .btn-secondary { min-width: 170px; }
+    .serving-card-row { display:flex; justify-content:space-between; gap:12px; align-items:center; }
+    .serving-card-title { font-size: 24px; line-height: 1.2; margin: 0; }
+    .serving-card-row .btn-secondary { min-width: 170px; margin-left: auto; }
     .menu-lock-hint { margin: 8px 0 0; font-size: 12px; color: #4f5f73; }
 
     .card {
@@ -653,6 +652,13 @@
       #menu > div .btn-primary,
       #expenses > div .btn-primary {
         width: 100% !important;
+      }
+      .serving-card-row {
+        flex-wrap: wrap;
+      }
+      .serving-card-row .btn-secondary {
+        width: 100%;
+        margin-left: 0;
       }
     }
 
@@ -1555,12 +1561,10 @@
             const current = openOrdersByTable.get(tableName);
             wrap.innerHTML += `<div class="card ${current ? 'serving-card-active' : ''}" style="padding:12px; margin-bottom:10px;">
               <div class="serving-card-row">
-                <div class="serving-card-heading">
-                  <strong>${tableName}</strong>
-                  <button class="btn-secondary" onclick="${current ? `editOrder('${current.id}')` : `startNewOrderForTable('${tableName}')`}">
-                    ${current ? 'Edit Current Order' : 'Create Order'}
-                  </button>
-                </div>
+                <strong class="serving-card-title">${tableName}</strong>
+                <button class="btn-secondary" onclick="${current ? `editOrder('${current.id}')` : `startNewOrderForTable('${tableName}')`}">
+                  ${current ? 'Edit Current Order' : 'Create Order'}
+                </button>
               </div>
               <div style="font-size:12px; color:var(--text-light); margin-top:6px;">
                 ${current ? `Serving ${current.customerName || 'Walk-in'} • ₹${current.total}` : 'No active order'}

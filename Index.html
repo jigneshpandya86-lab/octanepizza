@@ -121,6 +121,11 @@
     }
     .page { display: none; }
     .page.active { display: block; }
+    .tables-header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .table-lock-btn { border:1px solid var(--line); background:#fff; color:var(--text); border-radius:999px; padding:8px 12px; font-weight:700; cursor:pointer; }
+    .table-lock-btn.active { background:#0f172a; color:#fff; border-color:#0f172a; }
+    .serving-card-active { background:#ecfdf3; border:1px solid #b7ebcf; }
+    .menu-lock-hint { margin: 8px 0 0; font-size: 12px; color: #4f5f73; }
 
     .card {
       background: var(--card-bg);
@@ -751,23 +756,29 @@
     </div>
 
     <div id="tables" class="page card">
-      <h3>Currently Serving</h3>
-      <p class="page-intro">Manage active table orders. Use Table Master in hamburger menu for table setup.</p>
+      <div class="tables-header">
+        <h3>Currently Serving</h3>
+        <button id="tablesPinBtn" class="table-lock-btn" onclick="toggleTablesPin()">📌 Pin Tables</button>
+      </div>
       <div id="servingTablesList"></div>
     </div>
 
     <div id="menu" class="page card">
-      <h3>Menu Management</h3>
+      <div class="tables-header">
+        <h3>Menu Management</h3>
+        <button id="menuAccessBtn" class="table-lock-btn" onclick="toggleMenuAccess()">🔒 Unlock Menu</button>
+      </div>
+      <p id="menuLockHint" class="menu-lock-hint">Enter PIN to add or edit menu items.</p>
       <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
         <input type="hidden" id="menuId">
-        <input type="text" id="menuName" placeholder="Item Name" style="flex:1;">
-        <input type="text" id="menuCategory" placeholder="Category" style="flex:1;">
-        <input type="number" id="menuPrice" placeholder="Price (₹)" style="flex:1;">
-        <select id="menuStatus" style="flex:1;">
+        <input type="text" id="menuName" placeholder="Item Name" style="flex:1;" disabled>
+        <input type="text" id="menuCategory" placeholder="Category" style="flex:1;" disabled>
+        <input type="number" id="menuPrice" placeholder="Price (₹)" style="flex:1;" disabled>
+        <select id="menuStatus" style="flex:1;" disabled>
           <option value="Active">Active</option>
           <option value="Inactive">Inactive</option>
         </select>
-        <button class="btn-primary" style="width: auto;" onclick="saveMenu()">Save</button>
+        <button id="menuSaveBtn" class="btn-primary" style="width: auto;" onclick="saveMenu()" disabled>Save</button>
       </div>
       <table>
         <thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Status</th><th>Edit</th></tr></thead>
@@ -1059,6 +1070,8 @@
     let cart = [];
     let pendingOrder = null;
     let editingOrderId = '';
+    let isTablesPinned = false;
+    let isMenuUnlocked = false;
     let pendingPaymentOrder = null;
     let pendingBillOrderId = null;
     let currentOrders = [];
@@ -1224,8 +1237,69 @@
       return api;
     }
 
+
+    function toggleTablesPin() {
+      isTablesPinned = !isTablesPinned;
+      const pinBtn = document.getElementById('tablesPinBtn');
+      if (pinBtn) {
+        pinBtn.classList.toggle('active', isTablesPinned);
+        pinBtn.innerText = isTablesPinned ? '📌 Tables Pinned' : '📌 Pin Tables';
+      }
+      showToast(isTablesPinned ? 'Tables view pinned. Unpin to switch menu.' : 'Tables view unpinned.', 'info');
+    }
+
+    function updateMenuAccessUi() {
+      const lockBtn = document.getElementById('menuAccessBtn');
+      const lockHint = document.getElementById('menuLockHint');
+      const lockableIds = ['menuName', 'menuCategory', 'menuPrice', 'menuStatus', 'menuSaveBtn'];
+      lockableIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = !isMenuUnlocked;
+      });
+      if (lockBtn) {
+        lockBtn.classList.toggle('active', isMenuUnlocked);
+        lockBtn.innerText = isMenuUnlocked ? '🔓 Menu Unlocked' : '🔒 Unlock Menu';
+      }
+      if (lockHint) {
+        lockHint.innerText = isMenuUnlocked
+          ? 'Menu edit mode is unlocked for this session.'
+          : 'Enter PIN to add or edit menu items.';
+      }
+    }
+
+    function toggleMenuAccess() {
+      if (isMenuUnlocked) {
+        isMenuUnlocked = false;
+        updateMenuAccessUi();
+        loadMenuSetup();
+        showToast('Menu edit locked.', 'info');
+        return;
+      }
+      const enteredPin = window.prompt('Enter menu access PIN');
+      if (enteredPin === null) return;
+      if (enteredPin !== '1234') {
+        showToast('Incorrect PIN. Menu remains locked.', 'info');
+        return;
+      }
+      isMenuUnlocked = true;
+      updateMenuAccessUi();
+      loadMenuSetup();
+      showToast('Menu edit unlocked.', 'success');
+    }
+
+    function requireMenuAccess() {
+      if (isMenuUnlocked) return true;
+      showToast('Menu is locked. Tap Unlock Menu and enter PIN.', 'info');
+      return false;
+    }
+
     // Navigation
     function nav(pageId, btnEl) {
+      const tablesPage = document.getElementById('tables');
+      if (isTablesPinned && tablesPage && tablesPage.classList.contains('active') && pageId !== 'tables') {
+        showToast('Tables is pinned. Unpin to switch menu.', 'info');
+        return;
+      }
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(pageId).classList.add('active');
@@ -1271,6 +1345,7 @@
       loadTableSetup();
       loadTableService();
       loadOrders();
+      updateMenuAccessUi();
     };
 
     // --- POS FUNCTIONS ---
@@ -1476,7 +1551,7 @@
           wrap.innerHTML = '';
           activeTableNames.forEach(tableName => {
             const current = openOrdersByTable.get(tableName);
-            wrap.innerHTML += `<div class="card" style="padding:12px; margin-bottom:10px;">
+            wrap.innerHTML += `<div class="card ${current ? 'serving-card-active' : ''}" style="padding:12px; margin-bottom:10px;">
               <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:center;">
                 <div>
                   <strong>${tableName}</strong>
@@ -1548,13 +1623,14 @@
           tbody.innerHTML += `<tr>
             <td>${item.name}</td><td>${item.category}</td><td>₹${item.price}</td>
             <td><span class="status-badge status-${item.status}">${item.status}</span></td>
-            <td><button class="btn-secondary" onclick="editMenu('${item.id}', '${item.name}', '${item.category}', ${item.price}, '${item.status}')">Edit</button></td>
+            <td><button class="btn-secondary" onclick="editMenu('${item.id}', '${item.name}', '${item.category}', ${item.price}, '${item.status}')" ${isMenuUnlocked ? '' : 'disabled'}>Edit</button></td>
           </tr>`;
         });
       }).getMenu();
     }
 
     function saveMenu() {
+      if (!requireMenuAccess()) return;
       const item = {
         id: document.getElementById('menuId').value,
         name: document.getElementById('menuName').value,
@@ -1574,6 +1650,7 @@
     }
 
     function editMenu(id, name, cat, price, status) {
+      if (!requireMenuAccess()) return;
       document.getElementById('menuId').value = id;
       document.getElementById('menuName').value = name;
       document.getElementById('menuCategory').value = cat;

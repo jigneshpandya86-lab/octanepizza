@@ -125,6 +125,10 @@
     .table-lock-btn { border:1px solid var(--line); background:#fff; color:var(--text); border-radius:999px; padding:8px 12px; font-weight:700; cursor:pointer; }
     .table-lock-btn.active { background:#0f172a; color:#fff; border-color:#0f172a; }
     .serving-card-active { background:#ecfdf3; border:1px solid #b7ebcf; }
+    .serving-card-row { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:center; }
+    .serving-card-heading { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .serving-card-heading strong { font-size: 24px; line-height: 1.2; }
+    .serving-card-row .btn-secondary { min-width: 170px; }
     .menu-lock-hint { margin: 8px 0 0; font-size: 12px; color: #4f5f73; }
 
     .card {
@@ -1550,16 +1554,16 @@
           activeTableNames.forEach(tableName => {
             const current = openOrdersByTable.get(tableName);
             wrap.innerHTML += `<div class="card ${current ? 'serving-card-active' : ''}" style="padding:12px; margin-bottom:10px;">
-              <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:center;">
-                <div>
+              <div class="serving-card-row">
+                <div class="serving-card-heading">
                   <strong>${tableName}</strong>
-                  <div style="font-size:12px; color:var(--text-light);">
-                    ${current ? `Serving ${current.customerName || 'Walk-in'} • ₹${current.total}` : 'No active order'}
-                  </div>
+                  <button class="btn-secondary" onclick="${current ? `editOrder('${current.id}')` : `startNewOrderForTable('${tableName}')`}">
+                    ${current ? 'Edit Current Order' : 'Create Order'}
+                  </button>
                 </div>
-                <button class="btn-secondary" onclick="${current ? `editOrder('${current.id}')` : `startNewOrderForTable('${tableName}')`}">
-                  ${current ? 'Edit Current Order' : 'Create Order'}
-                </button>
+              </div>
+              <div style="font-size:12px; color:var(--text-light); margin-top:6px;">
+                ${current ? `Serving ${current.customerName || 'Walk-in'} • ₹${current.total}` : 'No active order'}
               </div>
             </div>`;
           });

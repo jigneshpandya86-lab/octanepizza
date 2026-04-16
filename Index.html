@@ -449,8 +449,8 @@
 
     @media print {
       @page {
-        size: A4;
-        margin: 10mm;
+        size: 80mm 280mm;
+        margin: 0;
       }
       body * { visibility: hidden; }
       #printSection, #printSection * { visibility: visible; }
@@ -459,7 +459,7 @@
         position: absolute;
         left: 0;
         top: 0;
-        width: 100%;
+        width: 80mm;
       }
     }
 
@@ -928,12 +928,13 @@
   <div id="printSection">
     <style>
       .receipt-container {
-        width: 190mm;
-        min-height: 277mm;
-        margin: 0 auto;
+        width: 80mm;
+        min-height: 280mm;
+        margin: 0;
         font-family: 'Segoe UI', Arial, sans-serif;
         font-size: 13px;
         line-height: 1.4;
+        box-sizing: border-box;
       }
       .receipt-header {
         text-align: center;

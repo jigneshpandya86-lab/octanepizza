@@ -1093,12 +1093,13 @@
     let currentOrders = [];
 
     const IS_APPS_SCRIPT_RUNTIME = typeof google !== 'undefined' && google.script && google.script.run;
+    const DEFAULT_GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzn1AC8kUPlMyokERaxTZbpl9iZvMhxJ9lTujX7hBZnBKOW8fDnBU2n_wbyWbUlxKcr6Q/exec';
     function resolveGasWebAppUrl() {
       const queryUrl = new URLSearchParams(window.location.search).get('gas_web_app_url');
       if (queryUrl && queryUrl.trim()) {
         localStorage.setItem('GAS_WEB_APP_URL', queryUrl.trim());
       }
-      return (window.GAS_WEB_APP_URL || queryUrl || localStorage.getItem('GAS_WEB_APP_URL') || '').trim();
+      return (window.GAS_WEB_APP_URL || queryUrl || localStorage.getItem('GAS_WEB_APP_URL') || DEFAULT_GAS_WEB_APP_URL || '').trim();
     }
     const GAS_WEB_APP_URL = resolveGasWebAppUrl();
     const IS_WEB_APP_BRIDGE_MODE = !IS_APPS_SCRIPT_RUNTIME && !!GAS_WEB_APP_URL;

@@ -21,4 +21,5 @@ Migrated the Apps Script HTML UI into this GitHub repo as a GitHub Pages app.
    - Or in browser console run:
    - `localStorage.setItem('GAS_WEB_APP_URL', 'YOUR_WEB_APP_URL')`
    - then refresh the page.
-4. GitHub Pages will call Apps Script via HTTP and show real data instead of demo data.
+4. GitHub Pages now uses GET for read APIs and `text/plain` POST for writes to reduce CORS/preflight issues with Apps Script.
+5. If backend verification fails, the app falls back to local data and shows an error toast; check deployment access and URL.

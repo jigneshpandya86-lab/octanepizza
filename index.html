@@ -1102,7 +1102,7 @@
       return (window.GAS_WEB_APP_URL || queryUrl || localStorage.getItem('GAS_WEB_APP_URL') || DEFAULT_GAS_WEB_APP_URL || '').trim();
     }
     const GAS_WEB_APP_URL = resolveGasWebAppUrl();
-    const IS_WEB_APP_BRIDGE_MODE = !IS_APPS_SCRIPT_RUNTIME && !!GAS_WEB_APP_URL;
+    let IS_WEB_APP_BRIDGE_MODE = !IS_APPS_SCRIPT_RUNTIME && !!GAS_WEB_APP_URL;
     const REQUIRE_GOOGLE_SHEET_BACKEND_FOR_WRITES = true;
 
     function ensureGoogleSheetBackend(actionName) {
@@ -1159,11 +1159,20 @@
     const LOCAL_DEMO_DB = readLocalDb();
 
     async function callWebApp(action, payload = {}) {
-      const res = await fetch(GAS_WEB_APP_URL, {
+      const readActions = new Set(['getMenu', 'getTables', 'getOrders', 'getExpenses']);
+      const isRead = readActions.has(action);
+      const endpoint = isRead
+        ? `${GAS_WEB_APP_URL}${GAS_WEB_APP_URL.includes('?') ? '&' : '?'}api=1&action=${encodeURIComponent(action)}`
+        : GAS_WEB_APP_URL;
+      const res = await fetch(endpoint, isRead ? {
+        method: 'GET'
+      } : {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // text/plain avoids CORS preflight issues from GitHub Pages to Apps Script.
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action, payload })
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status} while calling ${action}`);
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || `Request failed for ${action}`);
       return data.result;
@@ -1434,15 +1443,29 @@
       setTimeout(() => toast.remove(), 2700);
     }
 
+    async function verifyBackendConnection() {
+      if (!IS_WEB_APP_BRIDGE_MODE) return false;
+      try {
+        await callWebApp('getMenu');
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
     // Startup
-    window.onload = function() {
+    window.onload = async function() {
       if (IS_WEB_APP_BRIDGE_MODE) {
-        showToast('Connected to Apps Script Web App backend.', 'success');
+        const liveOk = await verifyBackendConnection();
+        if (liveOk) {
+          showToast('Connected to Apps Script Web App backend.', 'success');
+        } else {
+          IS_WEB_APP_BRIDGE_MODE = false;
+          localStorage.removeItem('GAS_WEB_APP_URL');
+          showToast('Backend URL failed from GitHub Pages (check deploy access/CORS). Using local data now.', 'danger');
+        }
       } else if (!IS_APPS_SCRIPT_RUNTIME) {
         showToast('Google Sheet backend not connected. Tap "Set Backend URL" to enable direct writes.', 'info');
-        setTimeout(() => {
-          if (window.confirm('Do you want to connect your Google Sheet backend now?')) configureBackendUrl();
-        }, 300);
       }
       loadPosMenu();
       loadTableSetup();

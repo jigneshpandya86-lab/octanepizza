@@ -1,21 +1,25 @@
 # octanepizza
 
-Moved the Apps Script HTML UI into this GitHub repo as `Index.html`.
+Migrated the Apps Script HTML UI into this GitHub repo as a GitHub Pages app.
 
 ## Files
 - `gs.txt`: Google Apps Script server-side code (`Code.gs`).
-- `Index.html`: Google Apps Script client-side HTML file.
-
-- `index.html`: GitHub Pages entry file that redirects to `Index.html`.
+- `index.html`: Primary GitHub Pages entry file (full app UI).
+- `Index.html`: Compatibility redirect to `index.html`.
 
 ## GitHub Pages note
-- `Index.html` loads live data only when served by Google Apps Script (`google.script.run`).
-- On GitHub Pages, the app now runs in demo mode with sample data so the UI is visible even without Apps Script backend access.
+- To write directly to Google Sheets from GitHub Pages, you must connect your Apps Script Web App URL.
+- Use the in-app **Set Backend URL** button or add `?gas_web_app_url=YOUR_WEB_APP_URL` to the page URL.
+- Once connected, create/update actions are sent to Apps Script (and then to Google Sheets).
+- The current default URL is already set in `index.html` as `DEFAULT_GAS_WEB_APP_URL`.
 
 ## Connect GitHub Pages to live Apps Script data
 1. Deploy `gs.txt` code as a Web App in Google Apps Script (`Deploy` → `New deployment` → `Web app`).
 2. Set access to `Anyone` (or your required audience) and copy the Web App URL.
-3. In `Index.html`, set `window.GAS_WEB_APP_URL` before the app script loads, or run in browser console:
+3. Configure the backend URL using either method:
+   - Add a query param once: `?gas_web_app_url=YOUR_WEB_APP_URL` (this is saved to `localStorage` automatically).
+   - Or in browser console run:
    - `localStorage.setItem('GAS_WEB_APP_URL', 'YOUR_WEB_APP_URL')`
    - then refresh the page.
-4. GitHub Pages will call Apps Script via HTTP and show real data instead of demo data.
+4. GitHub Pages now uses GET for read APIs and `text/plain` POST for writes to reduce CORS/preflight issues with Apps Script.
+5. If backend verification fails, the app falls back to local data and shows an error toast; check deployment access and URL.

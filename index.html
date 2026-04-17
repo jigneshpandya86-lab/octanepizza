@@ -1092,7 +1092,14 @@
     let currentOrders = [];
 
     const IS_APPS_SCRIPT_RUNTIME = typeof google !== 'undefined' && google.script && google.script.run;
-    const GAS_WEB_APP_URL = (window.GAS_WEB_APP_URL || localStorage.getItem('GAS_WEB_APP_URL') || '').trim();
+    function resolveGasWebAppUrl() {
+      const queryUrl = new URLSearchParams(window.location.search).get('gas_web_app_url');
+      if (queryUrl && queryUrl.trim()) {
+        localStorage.setItem('GAS_WEB_APP_URL', queryUrl.trim());
+      }
+      return (window.GAS_WEB_APP_URL || queryUrl || localStorage.getItem('GAS_WEB_APP_URL') || '').trim();
+    }
+    const GAS_WEB_APP_URL = resolveGasWebAppUrl();
     const IS_WEB_APP_BRIDGE_MODE = !IS_APPS_SCRIPT_RUNTIME && !!GAS_WEB_APP_URL;
 
     const LOCAL_DEMO_DB = {
@@ -1354,7 +1361,7 @@
       if (IS_WEB_APP_BRIDGE_MODE) {
         showToast('Connected to Apps Script Web App backend.', 'success');
       } else if (!IS_APPS_SCRIPT_RUNTIME) {
-        showToast('GitHub Pages demo mode: set window.GAS_WEB_APP_URL to use live Apps Script data.', 'info');
+        showToast('Live backend not configured. Add ?gas_web_app_url=YOUR_WEB_APP_URL to this page URL.', 'info');
       }
       loadPosMenu();
       loadTableSetup();

@@ -8,8 +8,9 @@ Migrated the Apps Script HTML UI into this GitHub repo as a GitHub Pages app.
 - `Index.html`: Compatibility redirect to `index.html`.
 
 ## GitHub Pages note
-- `index.html` loads live data when served inside Google Apps Script (`google.script.run`).
-- On GitHub Pages, the app uses sample data until a Web App backend URL is configured.
+- To write directly to Google Sheets from GitHub Pages, you must connect your Apps Script Web App URL.
+- Use the in-app **Set Backend URL** button or add `?gas_web_app_url=YOUR_WEB_APP_URL` to the page URL.
+- Once connected, create/update actions are sent to Apps Script (and then to Google Sheets).
 
 ## Connect GitHub Pages to live Apps Script data
 1. Deploy `gs.txt` code as a Web App in Google Apps Script (`Deploy` → `New deployment` → `Web app`).

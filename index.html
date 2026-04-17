@@ -719,6 +719,7 @@
     <button class="nav-btn" onclick="nav('menu', this); loadMenuSetup();">Menu</button>
     <button class="nav-btn" onclick="nav('expenses', this); loadExpenses();">Expenses</button>
     <button class="nav-btn" onclick="openTableMaster()">Table Master</button>
+    <button class="nav-btn" onclick="configureBackendUrl()">Set Backend URL</button>
   </div>
 
   <div class="container">
@@ -1101,20 +1102,60 @@
     }
     const GAS_WEB_APP_URL = resolveGasWebAppUrl();
     const IS_WEB_APP_BRIDGE_MODE = !IS_APPS_SCRIPT_RUNTIME && !!GAS_WEB_APP_URL;
+    const REQUIRE_GOOGLE_SHEET_BACKEND_FOR_WRITES = true;
 
-    const LOCAL_DEMO_DB = {
-      menu: [
-        { id: 'M101', name: 'Margherita Pizza', category: 'Pizza', price: 249, status: 'Active' },
-        { id: 'M102', name: 'Veggie Supreme', category: 'Pizza', price: 329, status: 'Active' },
-        { id: 'M103', name: 'Garlic Bread', category: 'Sides', price: 119, status: 'Active' }
-      ],
-      tables: [
-        { id: 'T1', name: 'Table 1', capacity: 4, status: 'Active' },
-        { id: 'T2', name: 'Table 2', capacity: 2, status: 'Active' }
-      ],
-      orders: [],
-      expenses: []
-    };
+    function ensureGoogleSheetBackend(actionName) {
+      if (IS_APPS_SCRIPT_RUNTIME || IS_WEB_APP_BRIDGE_MODE || !REQUIRE_GOOGLE_SHEET_BACKEND_FOR_WRITES) return true;
+      const err = new Error(`${actionName} needs Google Sheet backend. Add ?gas_web_app_url=YOUR_WEB_APP_URL and refresh.`);
+      showToast('Connect Google Sheet backend first. Tap "Set Backend URL".', 'danger');
+      return err;
+    }
+
+    function configureBackendUrl() {
+      const existing = GAS_WEB_APP_URL || localStorage.getItem('GAS_WEB_APP_URL') || '';
+      const entered = window.prompt('Paste your Apps Script Web App URL (https://script.google.com/.../exec):', existing);
+      if (!entered) return;
+      localStorage.setItem('GAS_WEB_APP_URL', entered.trim());
+      location.reload();
+    }
+
+    const LOCAL_DB_KEY = 'OCTANE_PIZZA_LOCAL_DB_V1';
+    function getLocalSeedDb() {
+      return {
+        menu: [
+          { id: 'M101', name: 'Margherita Pizza', category: 'Pizza', price: 249, status: 'Active' },
+          { id: 'M102', name: 'Veggie Supreme', category: 'Pizza', price: 329, status: 'Active' },
+          { id: 'M103', name: 'Garlic Bread', category: 'Sides', price: 119, status: 'Active' }
+        ],
+        tables: [
+          { id: 'T1', name: 'Table 1', capacity: 4, status: 'Active' },
+          { id: 'T2', name: 'Table 2', capacity: 2, status: 'Active' }
+        ],
+        orders: [],
+        expenses: []
+      };
+    }
+    function readLocalDb() {
+      try {
+        const raw = localStorage.getItem(LOCAL_DB_KEY);
+        if (!raw) return getLocalSeedDb();
+        const parsed = JSON.parse(raw);
+        return {
+          menu: Array.isArray(parsed.menu) ? parsed.menu : [],
+          tables: Array.isArray(parsed.tables) ? parsed.tables : [],
+          orders: Array.isArray(parsed.orders) ? parsed.orders : [],
+          expenses: Array.isArray(parsed.expenses) ? parsed.expenses : []
+        };
+      } catch (_) {
+        return getLocalSeedDb();
+      }
+    }
+    function persistLocalDb() {
+      try {
+        localStorage.setItem(LOCAL_DB_KEY, JSON.stringify(LOCAL_DEMO_DB));
+      } catch (_) {}
+    }
+    const LOCAL_DEMO_DB = readLocalDb();
 
     async function callWebApp(action, payload = {}) {
       const res = await fetch(GAS_WEB_APP_URL, {
@@ -1178,6 +1219,11 @@
             callWebApp('saveOrder', order).then(successHandler).catch(failureHandler);
             return api;
           }
+          const backendErr = ensureGoogleSheetBackend('saveOrder');
+          if (backendErr !== true) {
+            setTimeout(() => failureHandler(backendErr), 0);
+            return api;
+          }
           try {
             const id = order.id || `O${Date.now()}`;
             const row = {
@@ -1189,6 +1235,7 @@
             const idx = LOCAL_DEMO_DB.orders.findIndex(o => o.id === id);
             if (idx >= 0) LOCAL_DEMO_DB.orders[idx] = row;
             else LOCAL_DEMO_DB.orders.unshift(row);
+            persistLocalDb();
             setTimeout(() => successHandler({ id }), 0);
           } catch (err) {
             setTimeout(() => failureHandler(err), 0);
@@ -1200,11 +1247,17 @@
             callWebApp('saveTable', table).then(successHandler).catch(failureHandler);
             return api;
           }
+          const backendErr = ensureGoogleSheetBackend('saveTable');
+          if (backendErr !== true) {
+            setTimeout(() => failureHandler(backendErr), 0);
+            return api;
+          }
           const id = table.id || `T${Date.now()}`;
           const row = { ...table, id };
           const idx = LOCAL_DEMO_DB.tables.findIndex(t => t.id === id);
           if (idx >= 0) LOCAL_DEMO_DB.tables[idx] = row;
           else LOCAL_DEMO_DB.tables.push(row);
+          persistLocalDb();
           setTimeout(() => successHandler(true), 0);
           return api;
         },
@@ -1213,11 +1266,17 @@
             callWebApp('saveMenuItem', item).then(successHandler).catch(failureHandler);
             return api;
           }
+          const backendErr = ensureGoogleSheetBackend('saveMenuItem');
+          if (backendErr !== true) {
+            setTimeout(() => failureHandler(backendErr), 0);
+            return api;
+          }
           const id = item.id || `M${Date.now()}`;
           const row = { ...item, id };
           const idx = LOCAL_DEMO_DB.menu.findIndex(m => m.id === id);
           if (idx >= 0) LOCAL_DEMO_DB.menu[idx] = row;
           else LOCAL_DEMO_DB.menu.push(row);
+          persistLocalDb();
           setTimeout(() => successHandler(true), 0);
           return api;
         },
@@ -1226,8 +1285,14 @@
             callWebApp('updateOrderStatus', { id, status }).then(successHandler).catch(failureHandler);
             return api;
           }
+          const backendErr = ensureGoogleSheetBackend('updateOrderStatus');
+          if (backendErr !== true) {
+            setTimeout(() => failureHandler(backendErr), 0);
+            return api;
+          }
           const row = LOCAL_DEMO_DB.orders.find(o => o.id === id);
           if (row) row.status = status;
+          persistLocalDb();
           setTimeout(() => successHandler(true), 0);
           return api;
         },
@@ -1236,8 +1301,14 @@
             callWebApp('recordOrderPayment', { id, mode }).then(successHandler).catch(failureHandler);
             return api;
           }
+          const backendErr = ensureGoogleSheetBackend('recordOrderPayment');
+          if (backendErr !== true) {
+            setTimeout(() => failureHandler(backendErr), 0);
+            return api;
+          }
           const row = LOCAL_DEMO_DB.orders.find(o => o.id === id);
           if (row) row.mode = mode;
+          persistLocalDb();
           setTimeout(() => successHandler(true), 0);
           return api;
         },
@@ -1246,12 +1317,18 @@
             callWebApp('saveExpense', exp).then(successHandler).catch(failureHandler);
             return api;
           }
+          const backendErr = ensureGoogleSheetBackend('saveExpense');
+          if (backendErr !== true) {
+            setTimeout(() => failureHandler(backendErr), 0);
+            return api;
+          }
           LOCAL_DEMO_DB.expenses.unshift({
             date: new Date().toLocaleDateString(),
             category: exp.category,
             amount: exp.amount,
             desc: exp.desc
           });
+          persistLocalDb();
           setTimeout(() => successHandler(true), 0);
           return api;
         }
@@ -1361,7 +1438,10 @@
       if (IS_WEB_APP_BRIDGE_MODE) {
         showToast('Connected to Apps Script Web App backend.', 'success');
       } else if (!IS_APPS_SCRIPT_RUNTIME) {
-        showToast('Live backend not configured. Add ?gas_web_app_url=YOUR_WEB_APP_URL to this page URL.', 'info');
+        showToast('Google Sheet backend not connected. Tap "Set Backend URL" to enable direct writes.', 'info');
+        setTimeout(() => {
+          if (window.confirm('Do you want to connect your Google Sheet backend now?')) configureBackendUrl();
+        }, 300);
       }
       loadPosMenu();
       loadTableSetup();
